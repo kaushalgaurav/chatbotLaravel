@@ -1,1 +1,0 @@
-<?php /**PATH /var/www/html/chatbot/resources/views/chatbots/create.blade.php ENDPATH**/ ?>

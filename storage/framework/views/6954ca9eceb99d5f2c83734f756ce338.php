@@ -1,22 +1,22 @@
-@extends('layouts.master')
 
-@section('title')
-    @lang('translation.chatbot')
-@endsection
 
-@section('css')
+<?php $__env->startSection('title'); ?>
+    <?php echo app('translator')->get('translation.chatbot'); ?>
+<?php $__env->stopSection(); ?>
 
-@endsection
+<?php $__env->startSection('css'); ?>
 
-@section('content')
-    @component('components.breadcrumb')
-        @slot('li_1')
+<?php $__env->stopSection(); ?>
+
+<?php $__env->startSection('content'); ?>
+    <?php $__env->startComponent('components.breadcrumb'); ?>
+        <?php $__env->slot('li_1'); ?>
             Backend
-        @endslot
-        @slot('title')
+        <?php $__env->endSlot(); ?>
+        <?php $__env->slot('title'); ?>
             Chatbot
-        @endslot
-    @endcomponent
+        <?php $__env->endSlot(); ?>
+    <?php echo $__env->renderComponent(); ?>
 
 <style>
     .text-right {
@@ -25,7 +25,7 @@
 </style>
 
     <div id="app">
-        {{-- <build-chatbot :chatbot='@json($chatbot)'></build-chatbot> --}}
+        
         <div class="row">
      <div class="col-xl-12">
         <div class="card">
@@ -72,8 +72,10 @@
     </div>
   </div>
     </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('script')
+<?php $__env->startSection('script'); ?>
 
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.master', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\chatbotLaravel\resources\views/chatbots/build_chatbot.blade.php ENDPATH**/ ?>

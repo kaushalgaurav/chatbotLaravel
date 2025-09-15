@@ -1,0 +1,1 @@
+<?php /**PATH C:\xampp\htdocs\chatbotLaravel\resources\views\chatbots\show.blade.php ENDPATH**/ ?>

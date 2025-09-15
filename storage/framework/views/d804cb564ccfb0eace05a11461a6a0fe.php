@@ -1,24 +1,24 @@
-@extends('layouts.master')
 
-@section('title')
-    @lang('translation.chatbot')
-@endsection
 
-@section('css')
+<?php $__env->startSection('title'); ?>
+    <?php echo app('translator')->get('translation.chatbot'); ?>
+<?php $__env->stopSection(); ?>
+
+<?php $__env->startSection('css'); ?>
     <!--datatable css-->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css">
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('content')
-    @component('components.breadcrumb')
-        @slot('li_1')
+<?php $__env->startSection('content'); ?>
+    <?php $__env->startComponent('components.breadcrumb'); ?>
+        <?php $__env->slot('li_1'); ?>
             Backend
-        @endslot
-        @slot('title')
+        <?php $__env->endSlot(); ?>
+        <?php $__env->slot('title'); ?>
             Chatbot
-        @endslot
-    @endcomponent
+        <?php $__env->endSlot(); ?>
+    <?php echo $__env->renderComponent(); ?>
 
   
 
@@ -75,13 +75,13 @@
 
 
 
-@endsection
+<?php $__env->stopSection(); ?>
 
 
       
 
 
-@section('script')
+<?php $__env->startSection('script'); ?>
     <script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.1/js/dataTables.bootstrap4.min.js"></script>
     <script type="text/javascript">
@@ -89,7 +89,7 @@
             var table = $('.yajra-datatable').DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: "{{ route('chatbots.list') }}", // route to get Chatbot data
+                ajax: "<?php echo e(route('chatbots.list')); ?>", // route to get Chatbot data
                 pageLength: 10, // default rows per page
                 lengthMenu: [ [10, 100, 500], [10, 100, 500] ], // dropdown options
                 columns: [
@@ -105,4 +105,6 @@
 
         });
     </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.master', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\chatbotLaravel\resources\views/chatbots/index.blade.php ENDPATH**/ ?>
