@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Http\Requests\ChatbotRequest;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Crypt;
+use App\Http\Controllers\ChatbotController;
+
 
 class ChatbotController extends Controller
 {
@@ -32,7 +34,8 @@ class ChatbotController extends Controller
      */
     public function store(ChatbotRequest $request)
     {
-        $chatbot = Chatbot::create($request->validated());
+        // dd($request->all());
+        $chatbot = Chatbot::create($request->all());
 
         // Redirect back to index page with success message
         return redirect()
@@ -62,6 +65,7 @@ class ChatbotController extends Controller
      */
     public function update(ChatbotRequest $request, $encryptedId)
     {
+        // dd($request->all());
         $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
         $chatbot->update($request->validated());
 
@@ -96,12 +100,14 @@ class ChatbotController extends Controller
             ->addColumn('action', function($row){
                 $encryptedId = Crypt::encryptString($row->id);
                 $edit = '<a href="'.route('chatbots.edit', $encryptedId).'" class="btn btn-sm btn-primary">Edit</a>';
-                $delete = '<form method="POST" action="'.route('chatbots.destroy', $encryptedId).'" style="display:inline-block;">
+               $detailsForm = '<a href="'.route('chatbots.details', $encryptedId).'" class="btn btn-sm btn-info">Details</a>';
+                $build_chatbot = '<a href="'.route('chatbots.build', $encryptedId).'" class="btn btn-sm btn-success">Build</a>';
+                 $delete = '<form method="POST" action="'.route('chatbots.destroy', $encryptedId).'" style="display:inline-block;">
                             '.csrf_field().method_field('DELETE').'
                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure?\')">Delete</button>
                         </form>';
-                $build_chatbot = '<a href="'.route('chatbots.build', $encryptedId).'" class="btn btn-sm btn-success">Build</a>';
-                return $edit . ' ' . $delete . ' ' . $build_chatbot;
+                return $edit . ' ' . $delete . ' ' . $build_chatbot . ' ' . $detailsForm;
+                
             })
             ->rawColumns(['action'])
             ->make(true);
@@ -115,6 +121,12 @@ class ChatbotController extends Controller
     {
         $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
         return view('chatbots.build_chatbot', compact('chatbot'));
+    }
+
+ public function details($encryptedId)
+    {
+        $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
+        return view('chatbots.details', compact('chatbot'));
     }
 
 }

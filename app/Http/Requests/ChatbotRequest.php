@@ -21,6 +21,7 @@ class ChatbotRequest extends FormRequest
      */
     public function rules(): array
     {
+        // dd($this->all());
         $rules = [
             'description' => 'nullable|string|max:255',
             'platform' => 'nullable|string|max:50',
@@ -33,7 +34,7 @@ class ChatbotRequest extends FormRequest
             $rules['name'] = 'required|string|max:100';
         } elseif ($this->isMethod('put') || $this->isMethod('patch')) {
             // Update
-            $rules['name'] = 'required|string|max:100';
+            $rules['chatbot_name'] = 'required|string|max:100';
         }
 
         return $rules;

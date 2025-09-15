@@ -18,60 +18,8 @@
         @endslot
     @endcomponent
 
-<style>
-    .text-right {
-    text-align: right !important;
-}
-</style>
 
-    <div id="app">
-        {{-- <build-chatbot :chatbot='@json($chatbot)'></build-chatbot> --}}
-        <div class="row">
-     <div class="col-xl-12">
-        <div class="card">
-        <div class="card-body">
-            <div class="card-header d-flex align-items-center justify-content-between p-0 bg-transparent mb-3">
-              <h4 class="card-title">Chatbot</h4>
-            </div>
-           <form>
-            <div class="row g-3 align-items-center mb-4">
-                <div class="col-lg-2">
-                    <label for="" class="col-form-label">Name</label>
-                </div>
-                <div class="col-lg-6">
-                    <input type="text" id="inpurName" class="form-control" placeholder="Name">
-                </div>
-             </div>
-              <div class="row g-3 align-items-center mb-4">
-                <div class="col-lg-2">
-                    <label for="" class="col-form-label">Purpose</label>
-                </div>
-                <div class="col-lg-6">
-                    <input type="text" id="Purpose" class="form-control" placeholder="Purpose">
-                </div>
-             </div>
-             <div class="row g-3 align-items-center mb-4">
-                <div class="col-lg-2">
-                    <label for="" class="col-form-label">Name</label>
-                </div>
-                <div class="col-lg-6">
-                    <input type="text" id="inpurName" class="form-control" placeholder="Name">
-                </div>
-             </div> 
-             <div class="row g-3 align-items-center">
-                <div class="col-lg-8">
-                    <div class="text-right">
-                        <a href="javascript: void(0);" class="btn btn-secondary">Reset<span class="mdi mdi-alert-circle-outline ms-1"></span></a>
-                        <a href="javascript: void(0);" class="btn btn-primary ms-3">Submit<span class="mdi mdi-rocket-launch-outline ms-1"></span></a>
-                    </div>
-                </div>
-             </div>
-           </form>
-        </div>
-      </div>
-    </div>
-  </div>
-    </div>
+
 @endsection
 
 @section('script')

@@ -59,16 +59,27 @@
                             <h5 class="modal-title" id="staticBackdropLabel">Add Chatbot</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <lable>Chatbot Name<span>*</span></lable>
-                                <input type="text" class="form-control" placeholder="Name">
+                        <form method="post" action="<?php echo e(route('chatbots.store')); ?>">
+                            <?php echo csrf_field(); ?>
+                            <div class="modal-body">
+                                <div class="form-group mb-4">
+                                    <label>Chatbot Name<span>*</span></label>
+                                    <input type="text" class="form-control" placeholder="Name of Chatbot" name="name">
+                                </div>
+                                <div class="form-group">
+                                    <label>Chatbot Type<span>*</span></label>
+                                    <select class="form-control select-form" name="platform">
+                                        <option>select chatbot</option>
+                                        <option value="Web">Web</option>
+                                        <option value="RASA">RASA</option>
+                                    </select>
+                                </div>
                             </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                            <button type="button" class="btn btn-primary ms-3">Submit</button>
-                        </div>
+                            <div class="modal-footer">
+                                <button type="close" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-primary ms-3">Submit</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
