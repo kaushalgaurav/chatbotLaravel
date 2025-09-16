@@ -16,4 +16,4 @@
         </div>
     </div>
 </div>
-<!-- end page title --><?php /**PATH C:\xampp\htdocs\chatbotLaravel\resources\views/components/breadcrumb.blade.php ENDPATH**/ ?>
+<!-- end page title --><?php /**PATH /var/www/html/chatbotLaravel/resources/views/components/breadcrumb.blade.php ENDPATH**/ ?>

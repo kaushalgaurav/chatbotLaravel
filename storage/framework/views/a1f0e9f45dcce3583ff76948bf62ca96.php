@@ -45,4 +45,4 @@
 </body>
 
 </html>
-<?php /**PATH C:\xampp\htdocs\chatbotLaravel\resources\views/layouts/master.blade.php ENDPATH**/ ?>
+<?php /**PATH /var/www/html/chatbotLaravel/resources/views/layouts/master.blade.php ENDPATH**/ ?>

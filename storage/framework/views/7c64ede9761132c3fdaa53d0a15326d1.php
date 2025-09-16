@@ -247,4 +247,4 @@ unset($__errorArgs, $__bag); ?>" name="password"
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
-<?php /**PATH C:\xampp\htdocs\chatbotLaravel\resources\views/layouts/topbar.blade.php ENDPATH**/ ?>
+<?php /**PATH /var/www/html/chatbotLaravel/resources/views/layouts/topbar.blade.php ENDPATH**/ ?>
