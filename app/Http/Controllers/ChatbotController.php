@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use App\Http\Requests\ChatbotRequest;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Crypt;
-use App\Http\Controllers\ChatbotController;
 
 
 class ChatbotController extends Controller
@@ -107,7 +106,7 @@ class ChatbotController extends Controller
                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure?\')">Delete</button>
                         </form>';
                 return $edit . ' ' . $delete . ' ' . $build_chatbot . ' ' . $detailsForm;
-                
+
             })
             ->rawColumns(['action'])
             ->make(true);
