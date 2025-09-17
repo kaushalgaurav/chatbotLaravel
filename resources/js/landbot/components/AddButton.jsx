@@ -19,7 +19,7 @@ const AddButton = React.memo(function AddButton({ id, onAdd }) {
         width: "20px",        // w-6
         height: "20px",       // h-6
         fontSize: "12px",     // text-xs
-        lineHeight: "11",      // ensure icon centers nicely
+        lineHeight: "1",      // ensure icon centers nicely
         padding: "0"          // compact button
       }}
     >
