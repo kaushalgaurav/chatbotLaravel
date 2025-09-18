@@ -22,7 +22,7 @@ export default defineConfig({
         entryFileNames: "js/[name].js",
       },
     },
-  },
+  },                                                                                  
 
   plugins: [
     laravel({
@@ -32,7 +32,7 @@ export default defineConfig({
         "resources/scss/bootstrap.scss",
         "resources/scss/icons.scss",
         "resources/scss/app.scss",
-        "resources/js/landbot/index.css"
+        // "resources/js/landbot/index.css"
       ],
       refresh: true,
     }),

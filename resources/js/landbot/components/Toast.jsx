@@ -16,14 +16,20 @@ export default function Toast({ toast, onClear }) {
 
   if (!toast) return null;
 
-  const bg =
-    toast.type === "success" ? "bg-green-50 border-green-400" :
-    toast.type === "error" ? "bg-red-50 border-red-400" :
-    "bg-blue-50 border-blue-300";
+  // Map toast types to Bootstrap contextual classes
+  const variant =
+    toast.type === "success"
+      ? "border-success bg-light"
+      : toast.type === "error"
+      ? "border-danger bg-light"
+      : "border-primary bg-light";
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 p-3 border rounded shadow ${bg}`}>
-      <div className="text-sm">{toast.message}</div>
+    <div
+      className={`position-fixed p-3 border rounded shadow ${variant}`}
+      style={{ bottom: "1.5rem", right: "1.5rem", zIndex: 1050, maxWidth: "300px" }}
+    >
+      <div className="small">{toast.message}</div>
     </div>
   );
 }

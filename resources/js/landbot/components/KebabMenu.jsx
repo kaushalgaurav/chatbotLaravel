@@ -15,30 +15,50 @@ export default function KebabMenu({ onDelete, extraItems = [] }) {
     }, []);
 
     return (
-        <div ref={ref} style={{ position: "absolute", top: 8, right: 8, zIndex: 20 }}>
+        <div
+            ref={ref}
+            style={{ position: "absolute", top: 8, right: 8, zIndex: 20 }}
+            className="dropdown"
+        >
             <button
                 aria-label="Node menu"
                 onClick={() => setOpen((s) => !s)}
-                className="p-1 rounded hover:bg-gray-100"
-                style={{ width: 28, height: 28 }}
+                className="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center"
+                style={{ width: 28, height: 28, padding: 0 }}
+                type="button"
             >
                 ⋮
             </button>
 
             {open && (
-                <div className="bg-white border rounded shadow-sm text-sm" style={{ minWidth: 160 }}>
+                <div
+                    className="dropdown-menu show shadow-sm border"
+                    style={{ minWidth: 160 }}
+                >
                     {extraItems.map((it, i) => (
-                        <div key={i} onClick={() => { setOpen(false); it.onClick && it.onClick(); }} className="px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                        <button
+                            key={i}
+                            onClick={() => {
+                                setOpen(false);
+                                it.onClick && it.onClick();
+                            }}
+                            className="dropdown-item"
+                            type="button"
+                        >
                             {it.label}
-                        </div>
+                        </button>
                     ))}
 
-                    <div
-                        onClick={() => { setOpen(false); onDelete && onDelete(); }}
-                        className="px-3 py-2 hover:bg-red-50 cursor-pointer text-red-600"
+                    <button
+                        onClick={() => {
+                            setOpen(false);
+                            onDelete && onDelete();
+                        }}
+                        className="dropdown-item text-danger"
+                        type="button"
                     >
                         Delete block
-                    </div>
+                    </button>
                 </div>
             )}
         </div>

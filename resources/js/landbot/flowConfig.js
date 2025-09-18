@@ -1,5 +1,5 @@
 
-
+// resources/js/landbot/flowConfig.js
 import { StartingNode, QuestionNode, ButtonsNode, YesNoNode, RatingNode, MessageNode, ConditionNode, FormulaNode, LogicNode} from "../landbot/components/index";
 
 
