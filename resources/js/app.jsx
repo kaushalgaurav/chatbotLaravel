@@ -1,6 +1,8 @@
 import { ReactFlowProvider } from "@xyflow/react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { FlowApp, SharePage, PreviewPage } from "./landbot/components/index";
+// import './bootstrap';    // if you use this (axios/csrf)
+import './app';   
 
 export default function App() {
   return (

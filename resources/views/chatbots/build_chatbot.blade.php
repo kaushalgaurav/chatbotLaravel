@@ -1,15 +1,21 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Chatbot</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <title>Dashboards | Skote - Admin & Dashboard Template</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Premium Multipurpose Admin & Dashboard Template" />
+  <meta name="author" content="Themesbrand" />
+
+  {{-- Vite: inject correct built assets (CSS + JS) --}}
   @viteReactRefresh
-  @vite(['resources/js/landbot/main.jsx'])   {{-- this actually injects your JS --}}
-  {{-- (Optional) Load your SCSS bundle if needed on this page: --}}
-  @vite(['resources/scss/bootstrap.scss','resources/scss/icons.scss','resources/scss/app.scss'])
+  @vite('resources/js/landbot/main.jsx')
+
+  <!-- you can keep any other meta tags here -->
 </head>
 <body>
   <div id="root"></div>
+
+  {{-- Any other scripts you need can go here --}}
 </body>
 </html>

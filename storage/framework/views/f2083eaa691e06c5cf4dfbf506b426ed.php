@@ -4,8 +4,9 @@
 <script src="<?php echo e(URL::asset('build/libs/metismenu/metisMenu.min.js')); ?>"></script>
 <script src="<?php echo e(URL::asset('build/libs/simplebar/simplebar.min.js')); ?>"></script>
 <script src="<?php echo e(URL::asset('build/libs/node-waves/waves.min.js')); ?>"></script>
+
 <script>
-    $('#change-password').on('submit',function(event){
+    $('#change-password').on('submit', function(event) {
         event.preventDefault();
         var Id = $('#data_id').val();
         var current_password = $('#current-password').val();
@@ -16,22 +17,22 @@
         $('#password_confirmError').text('');
         $.ajax({
             url: "<?php echo e(url('update-password')); ?>" + "/" + Id,
-            type:"POST",
-            data:{
+            type: "POST",
+            data: {
                 "current_password": current_password,
                 "password": password,
                 "password_confirmation": password_confirm,
                 "_token": "<?php echo e(csrf_token()); ?>",
             },
-            success:function(response){
+            success: function(response) {
                 $('#current_passwordError').text('');
                 $('#passwordError').text('');
                 $('#password_confirmError').text('');
-                if(response.isSuccess == false){ 
+                if (response.isSuccess == false) {
                     $('#current_passwordError').text(response.Message);
-                }else if(response.isSuccess == true){
-                    setTimeout(function () {   
-                        window.location.href = "<?php echo e(route('root')); ?>"; 
+                } else if (response.isSuccess == true) {
+                    setTimeout(function() {
+                        window.location.href = "<?php echo e(route('root')); ?>";
                     }, 1000);
                 }
             },
@@ -46,7 +47,8 @@
 
 <?php echo $__env->yieldContent('script'); ?>
 
-<!-- App js -->
-<script src="<?php echo e(URL::asset('build/js/app.js')); ?>"></script>
 
-<?php echo $__env->yieldContent('script-bottom'); ?><?php /**PATH /var/www/html/chatbotLaravel/resources/views/layouts/vendor-scripts.blade.php ENDPATH**/ ?>
+<?php echo app('Illuminate\Foundation\Vite')('resources/js/app.jsx'); ?>
+
+<?php echo $__env->yieldContent('script-bottom'); ?>
+<?php /**PATH /var/www/html/chatbotLaravel/resources/views/layouts/vendor-scripts.blade.php ENDPATH**/ ?>
