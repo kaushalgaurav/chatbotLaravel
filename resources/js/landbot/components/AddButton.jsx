@@ -23,9 +23,35 @@ const AddButton = React.memo(function AddButton({ id, onAdd }) {
         padding: "0"          // compact button
       }}
     >
-      ➕
+       <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M5 12H19"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M13 6L19 12L13 18"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
     </button>
   );
 });
 
 export default AddButton;
+
+
+
+
+
+

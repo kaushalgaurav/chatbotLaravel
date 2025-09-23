@@ -1,0 +1,56 @@
+/* Animated edge styles */
+/* solid by default */
+.animated-edge {
+  stroke: #61c4b8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+  transition: 
+    stroke-width 0.12s ease,
+    stroke 0.12s ease,
+    stroke-dasharray 0.12s ease,
+    stroke-dashoffset 0.12s ease;
+  filter: drop-shadow(0 6px 16px rgba(10,20,30,0.06));
+}
+
+/* on hover: fewer, smoother dashes + quicker motion */
+.animated-edge.hover {
+  stroke: #49b8a6;
+  stroke-width: 4;
+  stroke-dasharray: 22 14;          /* long smooth dash pattern */
+  animation: dash-move 0.25s linear infinite; /* faster + seamless */
+}
+
+/* dash offset animation */
+@keyframes dash-move {
+  0%   { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -36; }  /* matches dash length for smooth loop */
+}
+
+
+
+
+
+/* Navigation bar styles */
+/* Active nav link underline */
+/* Active nav link underline */
+.active-link {
+  color: #0d6efd !important;
+}
+
+.active-link::after {
+  content: "";
+  display: block;
+  height: 3px;
+  width: 100%;
+  background: #0d6efd;
+  border-radius: 2px;
+  margin-top: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Hover effect */
+a:hover {
+  color: #0d6efd !important;
+}
+

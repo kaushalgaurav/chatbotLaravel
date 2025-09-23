@@ -1,25 +1,35 @@
-// src/FlowApp.jsx
+// resources/js/landbot/components/FlowApp.jsx
 import React, { useCallback, useState, useRef, useEffect, useMemo } from "react";
 import {
   ReactFlow,
   Background,
-  addEdge,
-  useEdgesState,
-  useNodesState,
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
+import useFlowState from "../hooks/useFlowState";
 import { nodeTypes, initialNodes } from "../flowConfig";
 import { Topbar, Toolbar, Chatbot, PopupMenu, NodeInspector, Toast } from "./index";
 import usePublish from "../hooks/usePublish";
+import AnimatedEdge from "../components/AnimatedEdge";
 
 export default function FlowApp() {
   // -----------------------
-  // Domain state
+  // Domain state (hook handles loading + saving)
   // -----------------------
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const {
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+    onNodesChange,
+    onEdgesChange,
+    addNode,
+    deleteNode,
+    onConnect,
+    resetFlow,
+  } = useFlowState(initialNodes, []);
+
   const [openChat, setOpenChat] = useState(false);
   const [popup, setPopup] = useState({ visible: false, x: 0, y: 0, sourceId: null });
   const [undoSnapshot, setUndoSnapshot] = useState(null);
@@ -34,15 +44,13 @@ export default function FlowApp() {
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
   useEffect(() => { nodesRef.current = nodes; edgesRef.current = edges; }, [nodes, edges]);
-// add inside FlowApp component
-useEffect(() => {
-  try {
-    localStorage.setItem("current-flow", JSON.stringify({ nodes, edges }));
-  } catch (e) {
-    // ignore quota errors
-  }
-}, [nodes, edges]);
+  const edgeTypes = React.useMemo(() => ({ animated: AnimatedEdge }), []);
 
+
+  // small debug so you can verify nodes/edges reached the component
+  useEffect(() => {
+    console.debug("[FlowApp] nodes count:", nodes?.length ?? 0, "edges count:", edges?.length ?? 0);
+  }, [nodes, edges]);
 
   // ---------- usePublish hook ----------
   const getFlowSnapshot = useCallback(() => {
@@ -60,10 +68,9 @@ useEffect(() => {
   const { publishing, toast, publish, clearToast } = usePublish(getFlowSnapshot);
 
   // -----------------------
-  // delete / undo handlers (defined before nodesWithAdd)
+  // delete / undo handlers
   // -----------------------
-  const deleteNode = useCallback((nodeId) => {
-    // capture node + its edges for possible undo
+  const deleteNodeHandler = useCallback((nodeId) => {
     setNodes((nds) => {
       const removed = nds.find((n) => n.id === nodeId);
       if (removed) {
@@ -74,7 +81,6 @@ useEffect(() => {
     });
 
     setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
-    // optional toast handled elsewhere
   }, [edges, setEdges, setNodes]);
 
   const undoDelete = useCallback(() => {
@@ -86,7 +92,7 @@ useEffect(() => {
   }, [undoSnapshot, setNodes, setEdges]);
 
   // -----------------------
-  // utility: default node data factory (restores condition/formula shapes)
+  // node data factory
   // -----------------------
   const getDefaultNodeData = useCallback((type, onAddClick) => {
     switch (type) {
@@ -138,7 +144,7 @@ useEffect(() => {
   }, []);
 
   // -----------------------
-  // nodesWithAdd (memoized)
+  // nodesWithAdd
   // -----------------------
   const nodesWithAdd = useMemo(() => {
     return nodes.map((n) => ({
@@ -146,37 +152,28 @@ useEffect(() => {
       data: {
         ...n.data,
         onAddClick: handleAddClick,
-        onDelete: () => deleteNode(n.id),
+        onDelete: () => deleteNodeHandler(n.id),
       },
     }));
-  }, [nodes, handleAddClick, deleteNode]);
+  }, [nodes, handleAddClick, deleteNodeHandler]);
+
+// -----------------------
+// connect handler (ensure handles & edge type are present)
+// -----------------------
+const handleConnect = useCallback((params) => {
+  const normalized = {
+    ...params,
+    // keep whatever the UI supplied but fall back to our handles/type
+    sourceHandle: params.sourceHandle || "arrow",
+    targetHandle: params.targetHandle || "in",
+    type: params.type || "animated",
+  };
+  // call hook's onConnect so its existing logic still runs
+  onConnect(normalized);
+}, [onConnect]);
 
   // -----------------------
-  // connect handler
-  // -----------------------
-  const onConnect = useCallback((params) => {
-    setEdges((eds) => addEdge({ ...params, animated: true }, eds));
-  }, [setEdges]);
-
-  // -----------------------
-  // Export helper (kept)
-  // -----------------------
-  // const exportFlow = useCallback(() => {
-  //   try {
-  //     const flow = toObject();
-  //     const blob = new Blob([JSON.stringify(flow, null, 2)], { type: "application/json" });
-  //     const url = URL.createObjectURL(blob);
-  //     const link = document.createElement("a");
-  //     link.href = url;
-  //     link.download = "flow.json";
-  //     link.click();
-  //   } catch (e) {
-  //     console.error("Export failed", e);
-  //   }
-  // }, [toObject]);
-
-  // -----------------------
-  // handleSelectType uses factory to create correct node data
+  // handleSelectType
   // -----------------------
   const handleSelectType = useCallback((type) => {
     if (!popup.sourceId) return;
@@ -191,16 +188,23 @@ useEffect(() => {
     };
 
     setNodes((nds) => [...nds, newNode]);
-    setEdges((eds) => [
-      ...eds,
-      { id: `e${popup.sourceId}-${id}`, source: popup.sourceId, target: id, animated: true },
-    ]);
+   setEdges((eds) => [
+  ...eds,
+  {
+    id: `e${popup.sourceId}-${id}`,
+    source: popup.sourceId,
+    sourceHandle: "arrow",    // attach to arrow on source
+    target: id,
+    targetHandle: "in",       // attach to left handle on target
+    type: "animated",         // use animated/custom edge rendering
+  },
+]);
 
     setPopup({ visible: false, x: 0, y: 0, sourceId: null });
   }, [popup.sourceId, nodes.length, getDefaultNodeData, handleAddClick, setNodes, setEdges]);
 
   // -----------------------
-  // Node update used by inspector
+  // updateNode (inspector)
   // -----------------------
   const updateNode = useCallback((newNode) => {
     setNodes((nds) => nds.map((n) => (n.id === newNode.id ? newNode : n)));
@@ -211,27 +215,23 @@ useEffect(() => {
   // -----------------------
   return (
     <div className="h-screen flex flex-col">
-      {/* Topbar - pass publish handler from hook */}
       <Topbar onTest={() => setOpenChat(true)} onPublish={publish} publishing={publishing} />
 
       <div style={{ width: "100%", height: "calc(100vh - 56px)" }}>
-        {/* Flow Builder */}
         <ReactFlow
           nodes={nodesWithAdd}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
+          onConnect={handleConnect}
           nodeTypes={nodeTypes}
-          // fitView 
-          
-           proOptions={{ hideAttribution: true }}
+          edgeTypes={edgeTypes}
+          proOptions={{ hideAttribution: true }}
           onNodeDoubleClick={(evt, node) => setSelectedNodeId(node.id)}
         >
           <Background gap={20} color="gray" />
         </ReactFlow>
 
-        {/* Toolbar */}
         <Toolbar
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
@@ -240,14 +240,6 @@ useEffect(() => {
           onRedo={() => alert("Redo placeholder")}
         />
 
-        {/* Export JSON */}
-        {/* <div className="absolute bottom-5 left-5">
-          <button onClick={exportFlow} className="bg-gray-700 text-white px-3 py-1 rounded">
-            Export JSON
-          </button>
-        </div> */}
-
-        {/* Popup Menu */}
         {popup.visible && (
           <PopupMenu
             x={popup.x}
@@ -257,29 +249,25 @@ useEffect(() => {
           />
         )}
 
-        {/* Node Inspector */}
         {selectedNode && (
           <NodeInspector node={selectedNode} onClose={() => setSelectedNodeId(null)} updateNode={updateNode} />
         )}
 
-        {/* Chatbot Window */}
         {openChat && (
-  <div
-    className="position-fixed top-0 end-0 h-100 bg-white shadow"
-    style={{ width: "24rem", zIndex: 1050, marginTop: "56px" }} // top offset for Topbar
-  >
-    <Chatbot
-      nodes={nodes || []}
-      edges={edges || []}
-      onClose={() => setOpenChat(false)}
-    />
-  </div>
-)}
-
+          <div
+            className="position-fixed top-0 end-0 h-100 bg-white shadow"
+            style={{ width: "24rem", zIndex: 1050, marginTop: "56px" }}
+          >
+            <Chatbot
+              nodes={nodes || []}
+              edges={edges || []}
+              onClose={() => setOpenChat(false)}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Publish / general toast (from your usePublish hook) */}
       <Toast toast={toast} onClear={clearToast} />
     </div>
   );
-}
+} 

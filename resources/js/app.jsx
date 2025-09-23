@@ -1,69 +1,8 @@
-// // resources/js/landbot/App.jsx
-// import React from "react";                 // <<--- ADD THIS
-// import { ReactFlowProvider } from "@xyflow/react";
-// import { BrowserRouter, Routes, Route } from "react-router-dom";
-
-// import FlowApp from "./landbot/components/FlowApp";
-// import SharePage from "./landbot/pages/SharePage";
-// import PreviewPage from "./landbot/pages/PreviewPage";
-
-// export default function App() {
-//   return (
-//     <BrowserRouter>
-//       <ReactFlowProvider>
-//         <Routes>
-//           {/* Main flow builder */}
-//           <Route path="/" element={<FlowApp />} />
-//           {/* Share page */}
-//           <Route path="/share" element={<SharePage />} />
-//           <Route path="/bot/preview/:botId" element={<PreviewPage />} />
-//         </Routes>
-//       </ReactFlowProvider>
-//     </BrowserRouter>
-//   );
-// }
-// // src/App.jsx
-// import { ReactFlowProvider } from "@xyflow/react";
-// import { BrowserRouter, Routes, Route } from "react-router-dom";
-// import { FlowApp, SharePage, PreviewPage} from "./components/index";
-
-// export default function App() {
-//   return (
-//     <BrowserRouter>
-//       <ReactFlowProvider>
-//         <Routes>
-//           {/* Main flow builder */}
-//           <Route path="/" element={<FlowApp />} />
-
-//           {/* Share page */}
-//           <Route path="/share" element={<SharePage />} />
-//            <Route path="/bot/preview/:botId" element={<PreviewPage />} />
-//         </Routes>
-//       </ReactFlowProvider>
-//     </BrowserRouter>
-//   );
-// }
-
-
-
-// import { BrowserRouter, Routes, Route } from "react-router-dom";
-// import { FlowApp, SharePage, PreviewPage } from "./components/index";
-
-// export default function App(){
-//   return (
-//     <BrowserRouter basename="/chatbots/build">
-//       <Routes>
-//         <Route path="/" element={<FlowApp/>} />
-//         <Route path="/share" element={<SharePage/>} />
-//         <Route path="/bot/preview/:botId" element={<PreviewPage/>} />
-//       </Routes>
-//     </BrowserRouter>
-//   );
-// }
-
 import { ReactFlowProvider } from "@xyflow/react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { FlowApp, SharePage, PreviewPage } from "./landbot/components/index";
+// import './bootstrap';    // if you use this (axios/csrf)
+import './app';   
 
 export default function App() {
   return (

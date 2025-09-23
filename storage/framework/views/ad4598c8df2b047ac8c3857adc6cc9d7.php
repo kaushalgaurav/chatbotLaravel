@@ -1,10 +1,13 @@
+
+
 <?php echo $__env->yieldContent('css'); ?>
 
-<!-- Bootstrap Css -->
-<link href="<?php echo e(URL::asset('build/css/bootstrap.min.css')); ?>" id="bootstrap-style" rel="stylesheet" type="text/css" />
-<!-- Icons Css -->
-<link href="<?php echo e(URL::asset('build/css/icons.min.css')); ?>" rel="stylesheet" type="text/css" />
-<!-- App Css-->
-<link href="<?php echo e(URL::asset('build/css/app.min.css')); ?>" id="app-style" rel="stylesheet" type="text/css" />
-<!-- App js -->
-<script src="<?php echo e(URL::asset('build/js/plugin.js')); ?>"></script><?php /**PATH /var/www/html/chatbotLaravel/resources/views/layouts/head-css.blade.php ENDPATH**/ ?>
+
+<?php echo app('Illuminate\Foundation\Vite')->reactRefresh(); ?>
+<?php echo app('Illuminate\Foundation\Vite')([
+  'resources/js/app.jsx',
+  'resources/scss/bootstrap.scss',
+  'resources/scss/icons.scss',
+  'resources/scss/app.scss',
+]); ?>
+<?php /**PATH /var/www/html/chatbotLaravel/resources/views/layouts/head-css.blade.php ENDPATH**/ ?>
