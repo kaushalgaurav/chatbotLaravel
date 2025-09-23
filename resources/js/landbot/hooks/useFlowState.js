@@ -5,13 +5,23 @@ import { useNodesState, useEdgesState, addEdge } from "@xyflow/react";
 const STORAGE_KEYS = ["landbot-flow-v1", "current-flow"]; // try both; keeps backwards compatibility
 const SAVE_DEBOUNCE_MS = 250;
 
-
 function safeParse(raw) {
   try {
     return JSON.parse(raw);
   } catch (e) {
     return null;
   }
+}
+
+/** Normalize an edge to ensure it attaches to our arrow/in handles and uses animated edge type */
+function normalizeEdge(e) {
+  if (!e) return e;
+  return {
+    ...e,
+    type: e.type || "animated",
+    sourceHandle: e.sourceHandle || "arrow",
+    targetHandle: e.targetHandle || "in",
+  };
 }
 
 export default function useFlowState(initialNodes = [], initialEdges = []) {
@@ -35,7 +45,10 @@ export default function useFlowState(initialNodes = [], initialEdges = []) {
   }
 
   const startNodes = (saved && Array.isArray(saved.nodes)) ? saved.nodes : initialNodes;
-  const startEdges = (saved && Array.isArray(saved.edges)) ? saved.edges : initialEdges;
+
+  // normalize startEdges so old flows still snap correctly to handles
+  const rawStartEdges = (saved && Array.isArray(saved.edges)) ? saved.edges : initialEdges;
+  const startEdges = Array.isArray(rawStartEdges) ? rawStartEdges.map(normalizeEdge) : [];
 
   const [nodes, setNodes, onNodesChange] = useNodesState(startNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(startEdges);
@@ -89,12 +102,20 @@ export default function useFlowState(initialNodes = [], initialEdges = []) {
   const addNode = useCallback((node, connectFromId = null) => {
     setNodes((nds) => [...nds, node]);
     if (connectFromId) {
-      setEdges((eds) => [...eds, { id: `e${connectFromId}-${node.id}`, source: connectFromId, target: node.id, animated: true }]);
+      // ensure programmatic edges have the proper handles/type so visuals snap correctly
+      const newEdge = normalizeEdge({
+        id: `e${connectFromId}-${node.id}`,
+        source: connectFromId,
+        target: node.id,
+      });
+      setEdges((eds) => [...eds, newEdge]);
     }
   }, [setNodes, setEdges]);
 
   const onConnect = useCallback((params) => {
-    setEdges((eds) => addEdge({ ...params, animated: true }, eds));
+    // ensure any user-created connection includes handles and edge type
+    const normalized = normalizeEdge(params);
+    setEdges((eds) => addEdge(normalized, eds));
   }, [setEdges]);
 
   const resetFlow = useCallback(() => {

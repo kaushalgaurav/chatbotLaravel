@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Dashboards | Skote - Admin & Dashboard Template</title>
+  <title>Dashboards | Admin & Dashboard Template</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Premium Multipurpose Admin & Dashboard Template" />
   <meta name="author" content="Themesbrand" />
@@ -17,6 +17,7 @@
   <div id="root"></div>
 
   
+  <?php echo $__env->make('layouts.vendor-scripts', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 </body>
 </html>
 <?php /**PATH /var/www/html/chatbotLaravel/resources/views/chatbots/build_chatbot.blade.php ENDPATH**/ ?>

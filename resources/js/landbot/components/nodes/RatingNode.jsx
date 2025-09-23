@@ -17,7 +17,7 @@ export default function RatingNode({ data, id }) {
 
   return (
     <div
-      className="bg-white border rounded p-3 shadow position-relative"
+      className="bg-white border rounded p-3 w-100 shadow position-relative"
       style={{
         width: "70%", // Tailwind w-50
         borderLeft: "4px solid #ffc107", // Bootstrap warning yellow

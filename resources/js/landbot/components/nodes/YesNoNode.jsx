@@ -40,7 +40,7 @@ export default function YesNoNode({ data, id }) {
 
   return (
     <div
-      className="bg-white border rounded p-3 shadow position-relative"
+      className="bg-white border rounded p-3  w-100 shadow position-relative"
       style={{
         width: "70%", // Tailwind w-50 equivalent
         borderLeft: "4px solid #198754", // Bootstrap 'success' green (#198754)

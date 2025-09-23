@@ -6,6 +6,7 @@ import App from '../app.jsx'
 import '../../scss/bootstrap.scss';
 import '../../scss/icons.scss';
 import '../../scss/app.scss';
+import '../landbot/index.css';
 
 
 

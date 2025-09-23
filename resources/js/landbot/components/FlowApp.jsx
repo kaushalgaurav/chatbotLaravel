@@ -11,6 +11,7 @@ import useFlowState from "../hooks/useFlowState";
 import { nodeTypes, initialNodes } from "../flowConfig";
 import { Topbar, Toolbar, Chatbot, PopupMenu, NodeInspector, Toast } from "./index";
 import usePublish from "../hooks/usePublish";
+import AnimatedEdge from "../components/AnimatedEdge";
 
 export default function FlowApp() {
   // -----------------------
@@ -43,6 +44,8 @@ export default function FlowApp() {
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
   useEffect(() => { nodesRef.current = nodes; edgesRef.current = edges; }, [nodes, edges]);
+  const edgeTypes = React.useMemo(() => ({ animated: AnimatedEdge }), []);
+
 
   // small debug so you can verify nodes/edges reached the component
   useEffect(() => {
@@ -154,12 +157,20 @@ export default function FlowApp() {
     }));
   }, [nodes, handleAddClick, deleteNodeHandler]);
 
-  // -----------------------
-  // connect handler (hook provides onConnect)
-  // -----------------------
-  const handleConnect = useCallback((params) => {
-    onConnect(params);
-  }, [onConnect]);
+// -----------------------
+// connect handler (ensure handles & edge type are present)
+// -----------------------
+const handleConnect = useCallback((params) => {
+  const normalized = {
+    ...params,
+    // keep whatever the UI supplied but fall back to our handles/type
+    sourceHandle: params.sourceHandle || "arrow",
+    targetHandle: params.targetHandle || "in",
+    type: params.type || "animated",
+  };
+  // call hook's onConnect so its existing logic still runs
+  onConnect(normalized);
+}, [onConnect]);
 
   // -----------------------
   // handleSelectType
@@ -177,10 +188,17 @@ export default function FlowApp() {
     };
 
     setNodes((nds) => [...nds, newNode]);
-    setEdges((eds) => [
-      ...eds,
-      { id: `e${popup.sourceId}-${id}`, source: popup.sourceId, target: id, animated: true },
-    ]);
+   setEdges((eds) => [
+  ...eds,
+  {
+    id: `e${popup.sourceId}-${id}`,
+    source: popup.sourceId,
+    sourceHandle: "arrow",    // attach to arrow on source
+    target: id,
+    targetHandle: "in",       // attach to left handle on target
+    type: "animated",         // use animated/custom edge rendering
+  },
+]);
 
     setPopup({ visible: false, x: 0, y: 0, sourceId: null });
   }, [popup.sourceId, nodes.length, getDefaultNodeData, handleAddClick, setNodes, setEdges]);
@@ -207,6 +225,7 @@ export default function FlowApp() {
           onEdgesChange={onEdgesChange}
           onConnect={handleConnect}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           proOptions={{ hideAttribution: true }}
           onNodeDoubleClick={(evt, node) => setSelectedNodeId(node.id)}
         >

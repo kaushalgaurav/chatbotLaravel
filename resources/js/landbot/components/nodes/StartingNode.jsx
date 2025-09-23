@@ -4,7 +4,10 @@ import { AddButton } from "../index";
 export default function StartingNode({ id, data }) {
   return (
     <div className="bg-white border rounded-3 p-3 shadow w-full position-relative">
+      {/* Arrow AddButton (visual) */}
       <AddButton id={id} onAdd={data?.onAddClick} />
+
+      {/* Node content */}
       <div className="d-flex align-items-center gap-2">
         <span>🏁</span>
         <div>
@@ -13,10 +16,20 @@ export default function StartingNode({ id, data }) {
         </div>
       </div>
 
+      {/* Source handle aligned under the arrow button */}
       <Handle
         type="source"
-        position={Position.Bottom}
-        className="bg-primary"
+        id="arrow"
+        position={Position.Right}
+        style={{
+          background: "transparent", // invisible
+          border: "none",
+          width: 12,
+          height: 12,
+          right: -6,
+          top: "50%",
+          transform: "translateY(-50%)",
+        }}
       />
     </div>
   );
