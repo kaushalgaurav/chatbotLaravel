@@ -61,12 +61,7 @@ export default function RatingNode({ data, id }) {
         ))}
       </div>
 
-      {/* Input handle (previous node) */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        style={{ background: "#ffc107" }}
-      />
+      
     </div>
   );
 }

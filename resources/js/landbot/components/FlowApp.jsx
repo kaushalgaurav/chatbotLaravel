@@ -4,6 +4,7 @@ import {
   ReactFlow,
   Background,
   useReactFlow,
+  useStore,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -39,7 +40,7 @@ export default function FlowApp() {
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
 
   const { zoomIn, zoomOut, fitView, toObject } = useReactFlow();
-
+  const zoom = useStore((state) => state.transform[2]);
   // keep refs for potential external usage
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
@@ -157,20 +158,20 @@ export default function FlowApp() {
     }));
   }, [nodes, handleAddClick, deleteNodeHandler]);
 
-// -----------------------
-// connect handler (ensure handles & edge type are present)
-// -----------------------
-const handleConnect = useCallback((params) => {
-  const normalized = {
-    ...params,
-    // keep whatever the UI supplied but fall back to our handles/type
-    sourceHandle: params.sourceHandle || "arrow",
-    targetHandle: params.targetHandle || "in",
-    type: params.type || "animated",
-  };
-  // call hook's onConnect so its existing logic still runs
-  onConnect(normalized);
-}, [onConnect]);
+  // -----------------------
+  // connect handler (ensure handles & edge type are present)
+  // -----------------------
+  const handleConnect = useCallback((params) => {
+    const normalized = {
+      ...params,
+      // keep whatever the UI supplied but fall back to our handles/type
+      sourceHandle: params.sourceHandle || "arrow",
+      targetHandle: params.targetHandle || "in",
+      type: params.type || "animated",
+    };
+    // call hook's onConnect so its existing logic still runs
+    onConnect(normalized);
+  }, [onConnect]);
 
   // -----------------------
   // handleSelectType
@@ -188,17 +189,17 @@ const handleConnect = useCallback((params) => {
     };
 
     setNodes((nds) => [...nds, newNode]);
-   setEdges((eds) => [
-  ...eds,
-  {
-    id: `e${popup.sourceId}-${id}`,
-    source: popup.sourceId,
-    sourceHandle: "arrow",    // attach to arrow on source
-    target: id,
-    targetHandle: "in",       // attach to left handle on target
-    type: "animated",         // use animated/custom edge rendering
-  },
-]);
+    setEdges((eds) => [
+      ...eds,
+      {
+        id: `e${popup.sourceId}-${id}`,
+        source: popup.sourceId,
+        sourceHandle: "arrow",    // attach to arrow on source
+        target: id,
+        targetHandle: "in",       // attach to left handle on target
+        type: "animated",         // use animated/custom edge rendering
+      },
+    ]);
 
     setPopup({ visible: false, x: 0, y: 0, sourceId: null });
   }, [popup.sourceId, nodes.length, getDefaultNodeData, handleAddClick, setNodes, setEdges]);
@@ -233,6 +234,7 @@ const handleConnect = useCallback((params) => {
         </ReactFlow>
 
         <Toolbar
+          zoom={zoom}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
           onFitView={fitView}

@@ -1,18 +1,47 @@
 // src/components/Topbar.jsx
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+
 
 export default function Topbar({ onTest, onPublish, publishing = false }) {
   const [botName, setBotName] = useState("My Chatbot");
   const [editing, setEditing] = useState(false);
+  const navigate = useNavigate();
 
   const linkClass =
     "text-decoration-none text-dark px-2 py-1 position-relative";
+
+  const handleBack = () => {
+    if (typeof onBack === "function") {
+      onBack();
+      return;
+    }
+
+    // default: try history back, otherwise go to root
+    try {
+      navigate(-1);
+    } catch (e) {
+      navigate("/");
+    }
+  };
 
   return (
     <div className="d-flex align-items-center px-5 py-3 bg-white shadow-sm position-relative">
       {/* Left: Logo + Bot Name */}
       <div className="d-flex align-items-center gap-3">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="btn btn-link p-0 d-flex align-items-center"
+          style={{ color: "#db2777" }} // pink arrow color
+          title="Back"
+          aria-label="Back"
+        >
+          <ArrowLeft size={26} strokeWidth={2.5} />
+        </button>
+
+
         <img
           src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS1szHkm1MJL1Fd9d-QoC2rYC-mBxyAqRWkTA&s"
           alt="Logo"
@@ -97,9 +126,8 @@ export default function Topbar({ onTest, onPublish, publishing = false }) {
         <button
           onClick={onPublish}
           disabled={publishing}
-          className={`btn px-5 py-2 fs-5 text-white ${
-            publishing ? "btn-secondary disabled" : "btn-danger"
-          }`}
+          className={`btn px-5 py-2 fs-5 text-white ${publishing ? "btn-secondary disabled" : "btn-danger"
+            }`}
           aria-busy={publishing}
         >
           {publishing ? (

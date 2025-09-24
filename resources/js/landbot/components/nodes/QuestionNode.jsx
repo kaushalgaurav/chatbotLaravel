@@ -33,9 +33,7 @@ export default function QuestionNode({ data, id }) {
         className="form-control form-control-sm text-secondary mt-1"
       />
 
-      {/* Handles */}
-      <Handle type="target" position={Position.Top} className="bg-primary" />
-      <Handle type="source" position={Position.Bottom} className="bg-primary" />
+    
     </div>
   );
 }

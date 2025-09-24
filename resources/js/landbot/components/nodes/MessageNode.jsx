@@ -34,9 +34,7 @@ export default function MessageNode({ data, id }) {
         rows={2}
       />
 
-      {/* Handles */}
-      <Handle type="target" position={Position.Top} className="bg-secondary" />
-      <Handle type="source" position={Position.Bottom} className="bg-secondary" />
+     
     </div>
   );
 }

@@ -42,13 +42,7 @@ export default function FormulaNode({ id, data = {} }) {
         <div className="mt-2 small text-muted">Output → {formula.outputVar || "(none)"}</div>
       </div>
 
-      {/* Single outgoing handle (bottom) */}
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="out"
-        style={{ background: "#6b7280" /* gray-500 */ }}
-      />
+     
       <div
         style={{ bottom: 10, left: "50%", transform: "translateX(-50%)" }}
         className="position-absolute small text-muted pointer-events-none"

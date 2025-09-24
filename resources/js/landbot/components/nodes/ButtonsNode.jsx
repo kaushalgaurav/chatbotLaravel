@@ -83,13 +83,6 @@ export default function ButtonsNode({ data, id }) {
         ))}
       </div>
 
-      {/* Input handle (previous node) */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        // top handle color
-        style={{ background: "#6f42c1" }}
-      />
     </div>
   );
 }

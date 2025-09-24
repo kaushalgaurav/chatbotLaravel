@@ -54,3 +54,8 @@ a:hover {
   color: #0d6efd !important;
 }
 
+
+
+/* Fullscreen layout styles */
+html, body, #app, #root { height: 100%; margin: 0; }
+body { overflow: hidden; } /* hides browser scrollbars; ReactFlow will pan/zoom inside viewport */

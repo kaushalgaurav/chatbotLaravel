@@ -80,12 +80,7 @@ export default function ConditionNode({ id, data = {} }) {
       })}
 
       {/* Default outgoing handle (bottom) */}
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="out-default"
-        style={{ left: "50%", background: "#6b7280" /* gray-400 */ }}
-      />
+
       <div
         style={{ bottom: 10, left: "50%" }}
         className="position-absolute small text-muted pointer-events-none"

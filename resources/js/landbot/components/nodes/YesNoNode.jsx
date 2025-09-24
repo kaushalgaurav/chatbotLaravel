@@ -106,12 +106,7 @@ export default function YesNoNode({ data, id }) {
         </div>
       </div>
 
-      {/* Input handle (previous node) */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        style={{ background: "#198754" }}
-      />
+     
     </div>
   );
 }
