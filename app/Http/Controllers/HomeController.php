@@ -45,6 +45,13 @@ class HomeController extends Controller
         return view('dashboard.index');
     }
 
+
+   public function workspace()
+{
+    return view('workspace.index');
+}
+
+
     /*Language Translation*/
     public function lang($locale)
     {
@@ -129,4 +136,7 @@ class HomeController extends Controller
             }
         }
     }
+
+
+
 }

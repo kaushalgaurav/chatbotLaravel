@@ -1,8 +1,7 @@
 <?php
 
 return [
-  "Menu" => "Menu",
-  "Dashboards" => "Dashboards",
+  "Dashboards" => "Bot builder",
   "Default" => "Default",
   "Saas" => "Saas",
   "Crypto" => "Crypto",

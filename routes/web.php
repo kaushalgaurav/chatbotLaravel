@@ -29,6 +29,8 @@ Route::post('/update-profile/{id}', [HomeController::class, 'updateProfile'])->n
 Route::post('/update-password/{id}', [HomeController::class, 'updatePassword'])->name('updatePassword');
 
 Route::get('/dashboard/index', [HomeController::class, 'index'])->name('dashboard.index');
+Route::get('/workspace/index', [HomeController::class, 'workspace'])->name('workspace.index');
+
 
 //Language Translation
 Route::get('index/{locale}', [HomeController::class, 'lang']);

@@ -8,7 +8,7 @@
                         <img src="{{ URL::asset('build/images/logo.svg') }}" alt="" height="22">
                     </span>
                     <span class="logo-lg">
-                        <img src="{{ URL::asset('build/images/logo-dark.png') }}" alt="" height="17">
+                        <img src="{{ URL::asset('build/images/nimbli_ai_logo.png') }}" alt="" height="22">
                     </span>
                 </a>
 
@@ -17,7 +17,7 @@
                         <img src="{{ URL::asset('build/images/logo-light.svg') }}" alt="" height="22">
                     </span>
                     <span class="logo-lg">
-                        <img src="{{ URL::asset('build/images/logo-light.png') }}" alt="" height="19">
+                        <img src="{{ URL::asset('build/images/nimbli_ai_logowht.png') }}" alt="" height="22">
                     </span>
                 </a>
             </div>
