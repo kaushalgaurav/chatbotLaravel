@@ -4,9 +4,10 @@
 
 @section('content')
 <style>
-    .page-content {
-  background: #fff;
+body {
+  background-color: #fff !important;
 }
+
 </style>
 <div class="chatbot-builder">
 
@@ -15,7 +16,7 @@
     <h4 class="mb-0 fs-22">Welcome to Chatbot Builder!</h4>
     <p class="text-muted m-0 p-0">Your free trial expires in <span class="fw-semibold">14 days</span></p>    
 </div>
- <button class="btn btn-primary">Upgrade <i class="fa fa-arrow-right ms-1"></i></button>
+ <button class="btn btn-primary" style="padding: 0px 50px;">Upgrade <i class="fa fa-arrow-right ms-1"></i></button>
 </div>
 
 <div class="create-card mb-5">
@@ -24,7 +25,7 @@
     </div>
     <div class="create-card-body d-flex gap-3">
         <div class="create-card-item" data-bs-toggle="modal" data-bs-target="#addchatbot">
-            <div class="create-card-icon">
+            <div class="create-card-icon btn-primary">
                 <img src="{{ URL::asset('build/images/icons/responsive.png') }}" alt="">
             </div>
             <h6 class="mb-0 fs-16">Web</h6>

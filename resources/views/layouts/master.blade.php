@@ -11,8 +11,6 @@
     <link rel="shortcut icon" href="{{ URL::asset('build/images/favicon.ico') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
-
-    <link href="{{ URL::asset('build/css/custom.css') }}" rel="stylesheet">
     @include('layouts.head-css')
 </head>
 
