@@ -32,7 +32,7 @@ export default defineConfig({
         "resources/scss/bootstrap.scss",
         "resources/scss/icons.scss",
         "resources/scss/app.scss",
-        "resources/css/custom.css",
+        "resources/scss/custom.scss",
       ],
       refresh: true,
     }),
