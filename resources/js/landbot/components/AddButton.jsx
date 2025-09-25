@@ -11,7 +11,7 @@ const AddButton = React.memo(function AddButton({ id, onAdd }) {
       onClick={handleClick}
       aria-label="Add next node"
       title="Add next node"
-      className="btn btn-primary btn-sm rounded-circle shadow position-absolute"
+      className="btn btn-sm rounded-circle shadow position-absolute"
       style={{
         right: "-12px",       // equivalent to Tailwind -right-3
         top: "50%",           // top-1/2
@@ -20,7 +20,9 @@ const AddButton = React.memo(function AddButton({ id, onAdd }) {
         height: "20px",       // h-6
         fontSize: "12px",     // text-xs
         lineHeight: "1",      // ensure icon centers nicely
-        padding: "0"          // compact button
+        padding: "0",          // compact button
+        backgroundColor: "#49b8a6",
+        border: "none"  
       }}
     >
        <svg

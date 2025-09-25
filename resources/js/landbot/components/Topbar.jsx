@@ -119,7 +119,7 @@ export default function Topbar({ onTest, onPublish, publishing = false }) {
 
       {/* Right: Buttons */}
       <div className="ms-auto d-flex align-items-center gap-4">
-        <button onClick={onTest} className="btn btn-success px-5 py-2 fs-5">
+        <button onClick={onTest} className="btn  px-5 py-2 fs-5">
           Test this bot
         </button>
 

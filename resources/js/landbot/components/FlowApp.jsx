@@ -5,6 +5,7 @@ import {
   Background,
   useReactFlow,
   useStore,
+  MiniMap
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -229,8 +230,10 @@ export default function FlowApp() {
           edgeTypes={edgeTypes}
           proOptions={{ hideAttribution: true }}
           onNodeDoubleClick={(evt, node) => setSelectedNodeId(node.id)}
+          fitView 
+          style={{ backgroundColor: "#454B6B" }}
         >
-          <Background gap={20} color="gray" />
+          <Background gap={20} color="white" />
         </ReactFlow>
 
         <Toolbar

@@ -42,7 +42,7 @@ Route::put('chatbots/{id}', [ChatbotController::class, 'update'])->name('chatbot
 Route::resource('chatbots', ChatbotController::class);
 
 
-// routes/web.php by anand 
+// for preview test.html
 Route::view('/bot/preview/{id}', 'chatbots.preview')->name('bot.preview');
 Route::view('/bot/preview/{id}/{any?}', 'chatbots.preview')->where('any', '.*');
 

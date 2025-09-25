@@ -23,7 +23,7 @@ export default function Toolbar({
 
   return (
     <div
-      className="position-absolute bg-white rounded shadow d-flex align-items-center gap-2 px-3 py-2"
+      className="position-absolute  rounded shadow d-flex align-items-center gap-2 px-3 py-2"
       style={{ bottom: "1.25rem", right: "1.25rem" }}
     >
       {/* Zoom Out */}
@@ -36,7 +36,7 @@ export default function Toolbar({
       </button>
 
       {/* Zoom Percentage */}
-      <span className="mx-2 fw-bold">{displayPercentage}</span>
+      <span className="mx-2 fw-bold text-white">{displayPercentage}</span>
 
       {/* Zoom In */}
       <button
