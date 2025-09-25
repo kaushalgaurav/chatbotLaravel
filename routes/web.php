@@ -40,3 +40,10 @@ Route::get('chatbots/{chatbot}/build', [ChatbotController::class, 'buildChatbot'
 Route::put('chatbots/{id}', [ChatbotController::class, 'update'])->name('chatbots.update');
 
 Route::resource('chatbots', ChatbotController::class);
+
+
+// routes/web.php by anand 
+Route::view('/bot/preview/{id}', 'chatbots.preview')->name('bot.preview');
+Route::view('/bot/preview/{id}/{any?}', 'chatbots.preview')->where('any', '.*');
+
+
