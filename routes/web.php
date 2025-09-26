@@ -47,5 +47,6 @@ Route::resource('chatbots', ChatbotController::class);
 // for preview test.html
 Route::view('/bot/preview/{id}', 'chatbots.preview')->name('bot.preview');
 Route::view('/bot/preview/{id}/{any?}', 'chatbots.preview')->where('any', '.*');
-
-
+Route::post('/chatbot/publish', [ChatbotController::class, 'publish'])->name('chatbot.publish');
+Route::get('/chatbot/history/{bot_id}', [ChatbotController::class, 'history'])->name('chatbot.history');
+Route::get('/publish-chatbot/{bot_id}', [ChatbotController::class, 'getPublishedChatbot'])->name('publish.chatbot');
