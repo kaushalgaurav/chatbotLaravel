@@ -1,3 +1,5 @@
+
+
 <?php $__env->startSection('title'); ?>
     <?php echo app('translator')->get('translation.Dashboards'); ?>
 <?php $__env->stopSection(); ?>
@@ -11,7 +13,7 @@
                 <div class="item-list">
                     <i class="mdi mdi-trash-can-outline"></i> Trash
                 </div>
-                <button class="add-btn">Add Workspace</button>
+                <button class="add-btn" onclick="convertToInput(this)">Add Workspace</button>
             </div>
 
             <!-- Team Members Section -->
@@ -20,7 +22,7 @@
                 <div class="item-list">
                     <i class="mdi mdi-account-multiple-outline"></i> Nadeem
                 </div>
-                <button class="add-btn">Add Team Member</button>
+                <button class="add-btn" data-bs-toggle="modal" data-bs-target="#addTeamMember">Add Team Member</button>
             </div>
         </div>
 
@@ -54,12 +56,14 @@
                 <div class="bot-card-container">
                     <div class="bot-info">
                         <input type="checkbox" class="form-check-input" type="checkbox" value="">
+                        <a href="javascript:void(0);" class="selected-link">
                         
                         <div class="bot-icon">🤖</div>
                         <div class="bot-text">
                             <h4><?php echo e($chatbot->name); ?></h4>
                             <small>Created <?php echo e($chatbot->created_at->diffForHumans()); ?> / Updated <?php echo e($chatbot->updated_at->diffForHumans()); ?></small>
                         </div>
+                        </a>
                         
                     </div>
                     <div class="bot-info-right">
@@ -141,6 +145,43 @@
             </div>
         </div>
     </div>
+
+
+   <!-- Static Add Team Member Modal -->
+        <div class="modal fade" id="addTeamMember" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" role="dialog" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+         <div class="modal-dialog modal-dialog-centered modal-lg custom-modal" role="document">
+            <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <h5 class="modal-title fs-28 text-center mb-4">Add Team Member</h5>
+            <div class="row align-items-center justify-content-center">
+               <div class="col-lg-12 col-md-12">
+                 <div class="form-group mb-4">
+                    <label for="exampleInputEmail1" class="form-label fs-14">Team Name</label>
+                    <input type="text" class="form-control" id="team-member-name" name="team-member-name" placeholder="Enter Name">
+                 </div>
+				</div>
+				 <div class="col-lg-12 col-md-12">
+                    <div class="form-group mb-4">
+						<label for="exampleInputEmail1" class="form-label fs-14">Email</label>
+						<input type="email" class="form-control" id="teammate-email" name="teammate-email" placeholder="Enter Email">
+                    </div>
+                </div>
+				<div class="col-lg-12 col-md-12">
+                    <div class="modal-footer border-0">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">CANCEL</button>
+						<button type="button" class="btn btn-primary ml-16">ADD</button>
+                    </div>
+                 </div>
+               
+              </div>
+             </div>
+           </div>
+        </div>
+
+        <!-- end build chatbot Modal -->
+
 <?php $__env->stopSection(); ?>
 <?php $__env->startSection('script'); ?>
     <!-- dashboard init -->
@@ -181,6 +222,41 @@
             });
         });
     </script>
+
+    <script>
+function convertToInput(button) {
+    // Create input element
+    let input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "Enter workspace name...";
+    input.className = "workspace-input";
+
+    // Replace button with input
+    button.replaceWith(input);
+    input.focus();
+
+    // Enter key → save and revert back to button
+    input.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+            revertToButton(input);
+        }
+    });
+
+    // Double click → cancel and revert back
+    input.addEventListener("dblclick", function() {
+        revertToButton(input);
+    });
+}
+
+function revertToButton(input) {
+    let newBtn = document.createElement("button");
+    newBtn.className = "add-btn";
+    newBtn.textContent = input.value || "Add Workspace";
+    newBtn.setAttribute("onclick", "convertToInput(this)");
+    input.replaceWith(newBtn);
+}
+</script>
+
 <?php $__env->stopSection(); ?>
 
-<?php echo $__env->make('layouts.master', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /var/www/html/chatbotLaravel/resources/views/workspace/index.blade.php ENDPATH**/ ?>
+<?php echo $__env->make('layouts.master', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\chatbotLaravel\resources\views/workspace/index.blade.php ENDPATH**/ ?>

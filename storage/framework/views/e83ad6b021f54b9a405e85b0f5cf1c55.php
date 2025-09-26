@@ -43,7 +43,7 @@
             <ul class="metismenu list-unstyled" id="side-menu">
                 <li>
                     <a href="<?php echo e(route('chatbots.index')); ?>" class="waves-effect">
-                        <i class="bx bx-chat"></i>
+                        <i class="mdi mdi-robot-outline"></i>
                         <span key="t-chatbot"><?php echo app('translator')->get('translation.Dashboards'); ?></span>
                     </a>
                 </li>
@@ -59,7 +59,7 @@
             <button type="button" class="btn header-item waves-effect w-100 text-left" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <img class="rounded-circle header-profile-user" src="<?php echo e(isset(Auth::user()->avatar) ? asset(Auth::user()->avatar) : asset('build/images/users/avatar-1.jpg')); ?>" alt="Header Avatar">
                 <span class="d-none d-xl-inline-block ms-1 color-white" key="t-henry"><?php echo e(ucfirst(Auth::user()->name)); ?></span>
-                <i class="mdi mdi-chevron-down d-none d-xl-inline-block"></i>
+                <i class="mdi mdi-chevron-down d-none d-xl-inline-block color-white"></i>
             </button>
             <div class="dropdown-menu dropdown-menu-end">
                 <!-- item-->
@@ -83,4 +83,4 @@
 
 </div>
 <!-- Left Sidebar End -->
-<?php /**PATH /var/www/html/chatbotLaravel/resources/views/layouts/sidebar.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\xampp\htdocs\chatbotLaravel\resources\views/layouts/sidebar.blade.php ENDPATH**/ ?>

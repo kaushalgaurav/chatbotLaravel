@@ -12,4 +12,4 @@
         </div>
     </div>
 </footer>
-<?php /**PATH /var/www/html/chatbotLaravel/resources/views/layouts/footer.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\xampp\htdocs\chatbotLaravel\resources\views/layouts/footer.blade.php ENDPATH**/ ?>
