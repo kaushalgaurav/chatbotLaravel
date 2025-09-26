@@ -1,12 +1,6 @@
 // resources/js/landbot/components/FlowApp.jsx
 import React, { useCallback, useState, useRef, useEffect, useMemo } from "react";
-import {
-  ReactFlow,
-  Background,
-  useReactFlow,
-  useStore,
-  MiniMap
-} from "@xyflow/react";
+import { ReactFlow, Background, useReactFlow, useStore } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import useFlowState from "../hooks/useFlowState";
@@ -15,208 +9,161 @@ import { Topbar, Toolbar, Chatbot, PopupMenu, NodeInspector, Toast } from "./ind
 import usePublish from "../hooks/usePublish";
 import AnimatedEdge from "../components/AnimatedEdge";
 
+const PUBLISH_KEY = "published-flow:v1";
+const PUBLISH_API = "http://127.0.0.1:8000/chatbot/publish";
+
 export default function FlowApp() {
   // -----------------------
-  // Domain state (hook handles loading + saving)
+  // Flow state
   // -----------------------
   const {
-    nodes,
-    edges,
-    setNodes,
-    setEdges,
-    onNodesChange,
-    onEdgesChange,
-    addNode,
-    deleteNode,
-    onConnect,
-    resetFlow,
+    nodes, edges, setNodes, setEdges,
+    onNodesChange, onEdgesChange,
+    onConnect
   } = useFlowState(initialNodes, []);
-  
+
   const [openChat, setOpenChat] = useState(false);
   const [popup, setPopup] = useState({ visible: false, x: 0, y: 0, sourceId: null });
   const [undoSnapshot, setUndoSnapshot] = useState(null);
-
-  // inspector selected node id
   const [selectedNodeId, setSelectedNodeId] = useState(null);
-  const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
+  const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
   const { zoomIn, zoomOut, fitView, toObject } = useReactFlow();
-  const zoom = useStore((state) => state.transform[2]);
-  // keep refs for potential external usage
-  const nodesRef = useRef(nodes);
-  const edgesRef = useRef(edges);
-  useEffect(() => { nodesRef.current = nodes; edgesRef.current = edges; }, [nodes, edges]);
-  const edgeTypes = React.useMemo(() => ({ animated: AnimatedEdge }), []);
+  const zoom = useStore(s => s.transform[2]);
+  const edgeTypes = useMemo(() => ({ animated: AnimatedEdge }), []);
 
+  // -----------------------
+  // Helpers
+  // -----------------------
+  const loadFlowForBot = (chatbotId) => {
+    const draftKey = `${PUBLISH_KEY}:${chatbotId}:draft`;
+    const draft = localStorage.getItem(draftKey);
 
-  // small debug so you can verify nodes/edges reached the component
-  useEffect(() => {
-    console.debug("[FlowApp] nodes count:", nodes?.length ?? 0, "edges count:", edges?.length ?? 0);
-  }, [nodes, edges]);
+    if (draft) {
+      try {
+        return JSON.parse(draft);
+      } catch {}
+    }
 
-  // ---------- usePublish hook ----------
-  const PUBLISH_API = "http://127.0.0.1:8000/chatbot/publish";
+    const raw = localStorage.getItem(`${PUBLISH_KEY}:${String(chatbotId) || "anon"}`);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        const latest = parsed.versions?.slice(-1)[0];
+        return latest?.payload ?? { nodes: [], edges: [] };
+      } catch {}
+    }
+    return { nodes: initialNodes, edges: [] };
+  };
 
   const getFlowSnapshot = useCallback(() => {
     try {
       const flow = toObject();
-      if (!flow || (!flow.nodes && !flow.edges)) {
-        return { nodes, edges };
-      }
-      return flow;
-    } catch (e) {
+      return flow?.nodes || flow?.edges ? flow : { nodes, edges };
+    } catch {
       return { nodes, edges };
     }
   }, [toObject, nodes, edges]);
 
   const { publishing, toast, publish, clearToast } = usePublish(getFlowSnapshot, {
-    apiUrl: PUBLISH_API,
-    sendBeforeSave: false,  
+    apiUrl: PUBLISH_API
   });
-      
 
   // -----------------------
-  // delete / undo handlers
+  // Node / Edge handlers
   // -----------------------
   const deleteNodeHandler = useCallback((nodeId) => {
-    setNodes((nds) => {
-      const removed = nds.find((n) => n.id === nodeId);
+    setNodes(nds => {
+      const removed = nds.find(n => n.id === nodeId);
       if (removed) {
         const relatedEdges = edges.filter(e => e.source === nodeId || e.target === nodeId);
         setUndoSnapshot({ node: removed, edges: relatedEdges });
       }
-      return nds.filter((n) => n.id !== nodeId);
+      return nds.filter(n => n.id !== nodeId);
     });
-
-    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+    setEdges(eds => eds.filter(e => e.source !== nodeId && e.target !== nodeId));
   }, [edges, setEdges, setNodes]);
 
   const undoDelete = useCallback(() => {
     if (!undoSnapshot) return;
     const { node, edges: removedEdges } = undoSnapshot;
-    if (node) setNodes((nds) => [...nds, node]);
-    if (removedEdges?.length) setEdges((eds) => [...eds, ...removedEdges]);
+    if (node) setNodes(nds => [...nds, node]);
+    if (removedEdges?.length) setEdges(eds => [...eds, ...removedEdges]);
     setUndoSnapshot(null);
   }, [undoSnapshot, setNodes, setEdges]);
 
-  // -----------------------
-  // node data factory
-  // -----------------------
   const getDefaultNodeData = useCallback((type, onAddClick) => {
     switch (type) {
-      case "question":
-        return { label: "Ask your question...", varName: "", onAddClick };
-      case "buttons":
-        return { question: "Choose an option:", options: ["Option 1", "Option 2"], varName: "", onAddClick };
-      case "yesno":
-        return { question: "Yes or No?", yesLabel: "Yes", noLabel: "No", varName: "", onAddClick };
-      case "rating":
-        return { question: "Rate from 1 to 5", onAddClick };
-      case "message":
-        return { text: "Bot message...", onAddClick };
-
-      case "condition":
-        return {
-          logicType: "condition",
-          conditions: [
-            { id: `c-${Date.now()}-1`, label: "Yes", variable: "last_answer", operator: "==", value: "yes" },
-            { id: `c-${Date.now()}-2`, label: "No", variable: "last_answer", operator: "==", value: "no" },
-          ],
-          defaultEdgeLabel: "default",
-          onAddClick,
-        };
-
-      case "formula":
-        return {
-          logicType: "formula",
-          formula: { expression: "parseFloat(num1) + parseFloat(num2)", outputVar: "sum" },
-          onAddClick,
-        };
-
-      default:
-        return { label: `${type} node`, onAddClick };
+      case "question": return { label: "Ask your question...", varName: "", onAddClick };
+      case "buttons": return { question: "Choose an option:", options: ["Option 1", "Option 2"], varName: "", onAddClick };
+      case "yesno":   return { question: "Yes or No?", yesLabel: "Yes", noLabel: "No", varName: "", onAddClick };
+      case "rating":  return { question: "Rate from 1 to 5", onAddClick };
+      case "message": return { text: "Bot message...", onAddClick };
+      case "condition": return {
+        logicType: "condition",
+        conditions: [
+          { id: `c-${Date.now()}-1`, label: "Yes", variable: "last_answer", operator: "==", value: "yes" },
+          { id: `c-${Date.now()}-2`, label: "No", variable: "last_answer", operator: "==", value: "no" },
+        ],
+        defaultEdgeLabel: "default", onAddClick
+      };
+      case "formula": return { logicType: "formula", formula: { expression: "parseFloat(num1) + parseFloat(num2)", outputVar: "sum" }, onAddClick };
+      default: return { label: `${type} node`, onAddClick };
     }
   }, []);
 
-  // -----------------------
-  // popup add click injector
-  // -----------------------
   const handleAddClick = useCallback((nodeId, e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    setPopup({
-      visible: true,
-      x: rect.right + 8,
-      y: rect.top,
-      sourceId: nodeId,
-    });
+    setPopup({ visible: true, x: rect.right + 8, y: rect.top, sourceId: nodeId });
   }, []);
 
-  // -----------------------
-  // nodesWithAdd
-  // -----------------------
-  const nodesWithAdd = useMemo(() => {
-    return nodes.map((n) => ({
-      ...n,
-      data: {
-        ...n.data,
-        onAddClick: handleAddClick,
-        onDelete: () => deleteNodeHandler(n.id),
-      },
-    }));
-  }, [nodes, handleAddClick, deleteNodeHandler]);
+  const nodesWithAdd = useMemo(() => nodes.map(n => ({
+    ...n,
+    data: { ...n.data, onAddClick: handleAddClick, onDelete: () => deleteNodeHandler(n.id) }
+  })), [nodes, handleAddClick, deleteNodeHandler]);
 
-  // -----------------------
-  // connect handler (ensure handles & edge type are present)
-  // -----------------------
   const handleConnect = useCallback((params) => {
-    const normalized = {
+    onConnect({
       ...params,
-      // keep whatever the UI supplied but fall back to our handles/type
       sourceHandle: params.sourceHandle || "arrow",
       targetHandle: params.targetHandle || "in",
-      type: params.type || "animated",
-    };
-    // call hook's onConnect so its existing logic still runs
-    onConnect(normalized);
+      type: params.type || "animated"
+    });
   }, [onConnect]);
 
-  // -----------------------
-  // handleSelectType
-  // -----------------------
   const handleSelectType = useCallback((type) => {
     if (!popup.sourceId) return;
     const id = `${Date.now()}`;
-    const defaultData = getDefaultNodeData(type, handleAddClick);
-
     const newNode = {
-      id,
-      type,
-      position: { x: 400, y: 200 + nodes.length * 80 },
-      data: defaultData,
+      id, type, data: getDefaultNodeData(type, handleAddClick),
+      position: { x: 400, y: 200 + nodes.length * 80 }
     };
-
-    setNodes((nds) => [...nds, newNode]);
-    setEdges((eds) => [
-      ...eds,
-      {
-        id: `e${popup.sourceId}-${id}`,
-        source: popup.sourceId,
-        sourceHandle: "arrow",    // attach to arrow on source
-        target: id,
-        targetHandle: "in",       // attach to left handle on target
-        type: "animated",         // use animated/custom edge rendering
-      },
-    ]);
-
+    setNodes(nds => [...nds, newNode]);
+    setEdges(eds => [...eds, { id: `e${popup.sourceId}-${id}`, source: popup.sourceId, sourceHandle: "arrow", target: id, targetHandle: "in", type: "animated" }]);
     setPopup({ visible: false, x: 0, y: 0, sourceId: null });
   }, [popup.sourceId, nodes.length, getDefaultNodeData, handleAddClick, setNodes, setEdges]);
 
-  // -----------------------
-  // updateNode (inspector)
-  // -----------------------
   const updateNode = useCallback((newNode) => {
-    setNodes((nds) => nds.map((n) => (n.id === newNode.id ? newNode : n)));
+    setNodes(nds => nds.map(n => n.id === newNode.id ? newNode : n));
   }, [setNodes]);
+
+  // -----------------------
+  // Load + auto-save draft
+  // -----------------------
+  useEffect(() => {
+    const chatbotId = document.getElementById("root")?.dataset?.chatbotId ?? "";
+    if (!chatbotId) return;
+    const flow = loadFlowForBot(chatbotId);
+    setNodes(flow?.nodes?.length ? flow.nodes : initialNodes);
+    setEdges(flow?.edges || []);
+  }, [setNodes, setEdges]);
+
+  useEffect(() => {
+    const chatbotId = document.getElementById("root")?.dataset?.chatbotId ?? "";
+    if (!chatbotId) return;
+    const draftKey = `${PUBLISH_KEY}:${chatbotId}:draft`;
+    localStorage.setItem(draftKey, JSON.stringify({ nodes, edges }));
+  }, [nodes, edges]);
 
   // -----------------------
   // Render
@@ -227,53 +174,25 @@ export default function FlowApp() {
 
       <div style={{ width: "100%", height: "calc(100vh - 56px)" }}>
         <ReactFlow
-          nodes={nodesWithAdd}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={handleConnect}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
+          nodes={nodesWithAdd} edges={edges}
+          onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
+          onConnect={handleConnect} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
           proOptions={{ hideAttribution: true }}
-          onNodeDoubleClick={(evt, node) => setSelectedNodeId(node.id)}
-          fitView 
-          style={{ backgroundColor: "#454B6B" }}
+          onNodeDoubleClick={(_, node) => setSelectedNodeId(node.id)}
+          fitView style={{ backgroundColor: "#454B6B" }}
         >
-          <Background gap={100} color="rgba(255,255,255,0.1)"  variant="lines"  />
+          <Background gap={100} color="rgba(255,255,255,0.1)" variant="lines" />
         </ReactFlow>
 
-        <Toolbar
-          zoom={zoom}
-          onZoomIn={zoomIn}
-          onZoomOut={zoomOut}
-          onFitView={fitView}
-          onUndo={() => alert("Undo placeholder")}
-          onRedo={() => alert("Redo placeholder")}
-        />
+        <Toolbar zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onFitView={fitView}
+                 onUndo={() => undoDelete()} onRedo={() => alert("Redo placeholder")} />
 
-        {popup.visible && (
-          <PopupMenu
-            x={popup.x}
-            y={popup.y}
-            onSelect={handleSelectType}
-            onClose={() => setPopup({ visible: false, x: 0, y: 0, sourceId: null })}
-          />
-        )}
-
-        {selectedNode && (
-          <NodeInspector node={selectedNode} onClose={() => setSelectedNodeId(null)} updateNode={updateNode} />
-        )}
-
+        {popup.visible && <PopupMenu x={popup.x} y={popup.y} onSelect={handleSelectType} onClose={() => setPopup({ visible: false, x: 0, y: 0, sourceId: null })} />}
+        {selectedNode && <NodeInspector node={selectedNode} onClose={() => setSelectedNodeId(null)} updateNode={updateNode} />}
         {openChat && (
-          <div
-            className="position-fixed top-0 end-0 h-100 bg-white shadow"
-            style={{ width: "24rem", zIndex: 1050, marginTop: "56px" }}
-          >
-            <Chatbot
-              nodes={nodes || []}
-              edges={edges || []}
-              onClose={() => setOpenChat(false)}
-            />
+          <div className="position-fixed top-0 end-0 h-100 bg-white shadow"
+               style={{ width: "24rem", zIndex: 1050, marginTop: "56px" }}>
+            <Chatbot nodes={nodes} edges={edges} onClose={() => setOpenChat(false)} />
           </div>
         )}
       </div>
@@ -281,4 +200,4 @@ export default function FlowApp() {
       <Toast toast={toast} onClear={clearToast} />
     </div>
   );
-} 
+}
