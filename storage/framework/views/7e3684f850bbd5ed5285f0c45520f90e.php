@@ -1,10 +1,8 @@
-@extends('layouts.master')
+<?php $__env->startSection('title'); ?>
+    <?php echo app('translator')->get('translation.Dashboards'); ?>
+<?php $__env->stopSection(); ?>
 
-@section('title')
-    @lang('translation.Dashboards')
-@endsection
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <div class="workspace-container d-flex">
         <div class="sidebar-workspace">
             <!-- Workspaces Section -->
@@ -49,20 +47,20 @@
             </div>
 
             <!-- Bot Card -->
-            @foreach ($chatbots as $chatbot)
-                @php
+            <?php $__currentLoopData = $chatbots; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $chatbot): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <?php
                     $encryptedId = Crypt::encryptString($chatbot->id);
-                @endphp
+                ?>
                 <div class="bot-card-container">
                     <div class="bot-info">
                         <input type="checkbox" class="form-check-input" type="checkbox" value="">
-                        {{-- <a href="{{ route('chatbots.build', $encryptedId) }}" class="stretched-link"> --}}
+                        
                         <div class="bot-icon">🤖</div>
                         <div class="bot-text">
-                            <h4>{{ $chatbot->name }}</h4>
-                            <small>Created {{ $chatbot->created_at->diffForHumans() }} / Updated {{ $chatbot->updated_at->diffForHumans() }}</small>
+                            <h4><?php echo e($chatbot->name); ?></h4>
+                            <small>Created <?php echo e($chatbot->created_at->diffForHumans()); ?> / Updated <?php echo e($chatbot->updated_at->diffForHumans()); ?></small>
                         </div>
-                        {{-- </a> --}}
+                        
                     </div>
                     <div class="bot-info-right">
                         <div class="bot-stats">
@@ -76,13 +74,13 @@
                             <li class="dropdown">
                                 <a href="javascript:void(0);" class="dropdown-toggle" data-bs-toggle="dropdown"><i class="mdi mdi-dots-horizontal"></i></a>
                                 <ul class="dropdown-menu">
-                                    {{-- <li><a class="dropdown-item" href="#">Duplicate</a></li> --}}
-                                    <li><a class="dropdown-item" href="{{ route('chatbots.build', $encryptedId) }}">Open Bot</a></li>
-                                    {{-- <li><a class="dropdown-item" href="#">Rename</a></li> --}}
+                                    
+                                    <li><a class="dropdown-item" href="<?php echo e(route('chatbots.build', $encryptedId)); ?>">Open Bot</a></li>
+                                    
                                     <li>
-                                        <form method="POST" action="{{ route('chatbots.destroy', $encryptedId) }}" style="display:inline-block;">
-                                            @csrf
-                                            @method('DELETE')
+                                        <form method="POST" action="<?php echo e(route('chatbots.destroy', $encryptedId)); ?>" style="display:inline-block;">
+                                            <?php echo csrf_field(); ?>
+                                            <?php echo method_field('DELETE'); ?>
                                             <button type="submit" class="btn btn-sm btn-danger dropdown-item" onclick="return confirm('Are you sure?')">Delete</button>
                                         </form>
                                     </li>
@@ -91,7 +89,7 @@
                         </ul>
                     </div>
                 </div>
-            @endforeach
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
             <!-- end Bot Card -->
 
@@ -111,7 +109,7 @@
                     <div class="col-lg-4 col-md-6">
                         <a href="javascript: void(0);">
                             <div class="start-building-card ">
-                                <div class="start-building-icon"><img src="{{ URL::asset('build/images/icons/scratch.png') }}" alt="scratch"></div>
+                                <div class="start-building-icon"><img src="<?php echo e(URL::asset('build/images/icons/scratch.png')); ?>" alt="scratch"></div>
                                 <h3 class="my-2 fs-20">Build it for me!</h3>
                                 <p class="mb-0">Tell what you need and we will create it automatically</p>
                             </div>
@@ -120,7 +118,7 @@
                     <div class="col-lg-4 col-md-6">
                         <a href="javascript: void(0);" class="start-from-scratch">
                             <div class="start-building-card ">
-                                <div class="start-building-icon"><img src="{{ URL::asset('build/images/icons/scratch.png') }}" alt="scratch"></div>
+                                <div class="start-building-icon"><img src="<?php echo e(URL::asset('build/images/icons/scratch.png')); ?>" alt="scratch"></div>
                                 <h3 class="my-2 fs-20">Start from scratch</h3>
                                 <p class="mb-0">Start with a blank builder and let your imagination flow!</p>
                             </div>
@@ -129,7 +127,7 @@
                     <div class="col-lg-4 col-md-6">
                         <a href="javascript: void(0);">
                             <div class="start-building-card ">
-                                <div class="start-building-icon"><img src="{{ URL::asset('build/images/icons/template.png') }}" alt="template"></div>
+                                <div class="start-building-icon"><img src="<?php echo e(URL::asset('build/images/icons/template.png')); ?>" alt="template"></div>
                                 <h3 class="my-2 fs-20">Use a template</h3>
                                 <p class="mb-0">Choose a pre-made bot and edit them as you want</p>
                             </div>
@@ -143,10 +141,10 @@
             </div>
         </div>
     </div>
-@endsection
-@section('script')
+<?php $__env->stopSection(); ?>
+<?php $__env->startSection('script'); ?>
     <!-- dashboard init -->
-    <script src="{{ URL::asset('build/js/pages/dashboard.init.js') }}"></script>
+    <script src="<?php echo e(URL::asset('build/js/pages/dashboard.init.js')); ?>"></script>
     <script>
         $(document).ready(function() {
             $('.start-from-scratch').on('click', function(e) {
@@ -162,7 +160,7 @@
                     url: '/chatbots/store',
                     method: 'POST',
                     headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
                     },
                     contentType: 'application/json',
                     dataType: 'json',
@@ -183,4 +181,6 @@
             });
         });
     </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.master', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /var/www/html/chatbotLaravel/resources/views/workspace/index.blade.php ENDPATH**/ ?>

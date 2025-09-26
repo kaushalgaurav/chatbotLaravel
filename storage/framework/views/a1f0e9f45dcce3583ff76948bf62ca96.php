@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
     <meta content="Themesbrand" name="author" />
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <!-- App favicon -->
     <link rel="shortcut icon" href="<?php echo e(URL::asset('build/images/favicon.ico')); ?>">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -15,8 +16,9 @@
 </head>
 
 <?php $__env->startSection('body'); ?>
+
     <body data-sidebar="dark" data-layout-mode="light">
-<?php echo $__env->yieldSection(); ?>
+    <?php echo $__env->yieldSection(); ?>
     <!-- Begin page -->
     <div id="layout-wrapper">
         
