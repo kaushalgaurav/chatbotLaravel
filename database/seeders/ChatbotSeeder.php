@@ -6,16 +6,15 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class ChatbotSeeder extends Seeder
-{
+class ChatbotSeeder extends Seeder {
     /**
      * Run the database seeds.
      */
-    public function run(): void
-    {
+    public function run(): void {
         DB::table('chatbots')->insert([
             [
                 'name' => 'SupportBot',
+                'user_id' => 1,
                 'description' => 'Customer support chatbot for FAQs and queries',
                 'platform' => 'Web',
                 'language' => 'en',
@@ -25,6 +24,7 @@ class ChatbotSeeder extends Seeder
             ],
             [
                 'name' => 'SalesBot',
+                'user_id' => 1,
                 'description' => 'Helps customers with product recommendations',
                 'platform' => 'WhatsApp',
                 'language' => 'en',

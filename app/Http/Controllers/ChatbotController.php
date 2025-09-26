@@ -9,15 +9,22 @@ use App\Models\ChatbotPublication;
 use App\Models\ChatbotPublicationHistory;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Auth;
 
 
 class ChatbotController extends Controller {
     /**
      * Display a listing of the resource.
      */
+
+    // public function workspace() {
+    //     return view('workspace.index');
+    // }
+
     public function index() {
-        $chatbots = Chatbot::all();
-        return view('chatbots.index', compact('chatbots'));
+        $chatbots = Chatbot::select(['id', 'name', 'description', 'created_at', 'platform', 'created_at', 'updated_at'])->where('user_id', Auth::user()->id)->orderBy('created_at', 'desc')->get();
+
+        return view('workspace.index', compact('chatbots'));
     }
 
     /**
@@ -31,13 +38,15 @@ class ChatbotController extends Controller {
      * Store a newly created resource in storage.
      */
     public function store(ChatbotRequest $request) {
-        // dd($request->all());
+
         $chatbot = Chatbot::create($request->all());
 
         // Redirect back to index page with success message
-        return redirect()
-            ->route('chatbots.index')
-            ->with('success', 'Chatbot created successfully!');
+        return response()->json([
+            'success' => true,
+            'message' => 'Chatbot created successfully',
+            'bot_id'  => Crypt::encryptString($chatbot->id),
+        ], 201);
     }
 
     /**
@@ -84,25 +93,25 @@ class ChatbotController extends Controller {
      * Get chatbot list for DataTables (AJAX).
      */
 
-    public function getChatbotList(Request $request) {
-        $chatbots = Chatbot::select(['id', 'name', 'description', 'created_at', 'platform']);
+    // public function getChatbotList(Request $request) {
+    //     $chatbots = Chatbot::select(['id', 'name', 'description', 'created_at', 'platform']);
 
-        return DataTables::of($chatbots)
-            ->addIndexColumn() // generates serial number DT_RowIndex
-            ->addColumn('action', function ($row) {
-                $encryptedId = Crypt::encryptString($row->id);
-                $edit = '<a href="' . route('chatbots.edit', $encryptedId) . '" class="btn btn-sm btn-primary">Edit</a>';
-                $detailsForm = '<a href="' . route('chatbots.details', $encryptedId) . '" class="btn btn-sm btn-info">Details</a>';
-                $build_chatbot = '<a href="' . route('chatbots.build', $encryptedId) . '" class="btn btn-sm btn-success">Build</a>';
-                $delete = '<form method="POST" action="' . route('chatbots.destroy', $encryptedId) . '" style="display:inline-block;">
-                            ' . csrf_field() . method_field('DELETE') . '
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure?\')">Delete</button>
-                        </form>';
-                return $edit . ' ' . $delete . ' ' . $build_chatbot . ' ' . $detailsForm;
-            })
-            ->rawColumns(['action'])
-            ->make(true);
-    }
+    //     return DataTables::of($chatbots)
+    //         ->addIndexColumn() // generates serial number DT_RowIndex
+    //         ->addColumn('action', function ($row) {
+    //             $encryptedId = Crypt::encryptString($row->id);
+    //             $edit = '<a href="' . route('chatbots.edit', $encryptedId) . '" class="btn btn-sm btn-primary">Edit</a>';
+    //             $detailsForm = '<a href="' . route('chatbots.details', $encryptedId) . '" class="btn btn-sm btn-info">Details</a>';
+    //             $build_chatbot = '<a href="' . route('chatbots.build', $encryptedId) . '" class="btn btn-sm btn-success">Build</a>';
+    //             $delete = '<form method="POST" action="' . route('chatbots.destroy', $encryptedId) . '" style="display:inline-block;">
+    //                         ' . csrf_field() . method_field('DELETE') . '
+    //                         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure?\')">Delete</button>
+    //                     </form>';
+    //             return $edit . ' ' . $delete . ' ' . $build_chatbot . ' ' . $detailsForm;
+    //         })
+    //         ->rawColumns(['action'])
+    //         ->make(true);
+    // }
 
     /**
      * Build chatbot react.

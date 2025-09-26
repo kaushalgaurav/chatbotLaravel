@@ -38,6 +38,7 @@ Route::get('index/{locale}', [HomeController::class, 'lang']);
 Route::get('/chatbots/details/{id}', [ChatbotController::class, 'details'])->name('chatbots.details');
 
 Route::get('chatbots/list', [ChatbotController::class, 'getChatbotList'])->name('chatbots.list');
+Route::post('chatbots/store', [ChatbotController::class, 'store'])->name('chatbots.store');
 Route::get('chatbots/{chatbot}/build', [ChatbotController::class, 'buildChatbot'])->name('chatbots.build');
 Route::put('chatbots/{id}', [ChatbotController::class, 'update'])->name('chatbots.update');
 
