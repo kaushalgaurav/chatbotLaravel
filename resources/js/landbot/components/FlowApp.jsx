@@ -31,7 +31,7 @@ export default function FlowApp() {
     onConnect,
     resetFlow,
   } = useFlowState(initialNodes, []);
-
+  
   const [openChat, setOpenChat] = useState(false);
   const [popup, setPopup] = useState({ visible: false, x: 0, y: 0, sourceId: null });
   const [undoSnapshot, setUndoSnapshot] = useState(null);
@@ -55,6 +55,8 @@ export default function FlowApp() {
   }, [nodes, edges]);
 
   // ---------- usePublish hook ----------
+  const PUBLISH_API = "http://127.0.0.1:8000/chatbot/publish";
+
   const getFlowSnapshot = useCallback(() => {
     try {
       const flow = toObject();
@@ -67,7 +69,11 @@ export default function FlowApp() {
     }
   }, [toObject, nodes, edges]);
 
-  const { publishing, toast, publish, clearToast } = usePublish(getFlowSnapshot);
+  const { publishing, toast, publish, clearToast } = usePublish(getFlowSnapshot, {
+    apiUrl: PUBLISH_API,
+    sendBeforeSave: false,  
+  });
+      
 
   // -----------------------
   // delete / undo handlers
@@ -233,7 +239,7 @@ export default function FlowApp() {
           fitView 
           style={{ backgroundColor: "#454B6B" }}
         >
-          <Background gap={60} color="rgba(255,255,255,0.1)"  variant="lines"  />
+          <Background gap={100} color="rgba(255,255,255,0.1)"  variant="lines"  />
         </ReactFlow>
 
         <Toolbar
