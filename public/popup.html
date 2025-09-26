@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Chatbot Test</title>
+</head>
+<body>
+  <h1>Testing Chat Widget</h1>
+  <p>This is a plain HTML page.</p>
+<!-- Bot embed (popup) -->
+<script>
+(function(){
+  var BOT="v-1758793476513",TYPE="popup",PRO=0,BASE="http://127.0.0.1:8000";
+  var f=document.createElement('iframe');
+  f.src=BASE+'/bot/preview/'+BOT+'?embed='+TYPE+'&proactive='+(PRO?1:0);
+  Object.assign(f.style,{position:'fixed',right:'20px',bottom:'80px',width:'360px',height:'500px',border:0,borderRadius:'12px',boxShadow:'0 8px 30px rgba(0,0,0,0.18)',zIndex:999998});
+  f.title='Chatbot'; f.loading='lazy';
+  var b=document.createElement('button'); b.innerText='💬';
+  Object.assign(b.style,{position:'fixed',right:'20px',bottom:'20px',zIndex:999999,padding:'10px',borderRadius:'999px',cursor:'pointer'});
+  var shown=false;
+  b.onclick=function(){ if(shown){ f.remove(); shown=false } else { document.body.appendChild(f); shown=true } };
+  document.body.appendChild(b);
+  window.__bot_widget=window.__bot_widget||{};
+  window.__bot_widget.sendPrefill=function(d){ try{ f.contentWindow.postMessage({type:'prefill',data:d}, BASE); }catch(e){} };
+})();
+</script>
+</body>
+</html>

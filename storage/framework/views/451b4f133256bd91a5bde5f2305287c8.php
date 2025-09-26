@@ -108,4 +108,4 @@
     
 </div>
 <!-- Left Sidebar End -->
-<?php /**PATH C:\xampp\htdocs\chatbotLaravel\resources\views/layouts/sidebar.blade.php ENDPATH**/ ?>
+<?php /**PATH /var/www/html/chatbotLaravel/resources/views/layouts/sidebar.blade.php ENDPATH**/ ?>

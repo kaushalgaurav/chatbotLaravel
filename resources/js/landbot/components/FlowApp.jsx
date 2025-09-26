@@ -233,7 +233,7 @@ export default function FlowApp() {
           fitView 
           style={{ backgroundColor: "#454B6B" }}
         >
-          <Background gap={20} color="white" />
+          <Background gap={60} color="rgba(255,255,255,0.1)"  variant="lines"  />
         </ReactFlow>
 
         <Toolbar

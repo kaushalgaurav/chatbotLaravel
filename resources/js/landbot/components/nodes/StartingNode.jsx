@@ -4,10 +4,8 @@ import { AddButton } from "../index";
 export default function StartingNode({ id, data }) {
   return (
     <div className="bg-white border rounded-3 p-3 shadow w-full position-relative">
-      {/* Arrow AddButton (visual) */}
       <AddButton id={id} onAdd={data?.onAddClick} />
 
-      {/* Node content */}
       <div className="d-flex align-items-center gap-2">
         <span>🏁</span>
         <div>
@@ -16,19 +14,23 @@ export default function StartingNode({ id, data }) {
         </div>
       </div>
 
-      {/* Source handle aligned under the arrow button */}
       <Handle
         type="source"
         id="arrow"
         position={Position.Right}
         style={{
-          background: "transparent", // invisible
+          background: "transparent",
           border: "none",
           width: 12,
           height: 12,
           right: -6,
           top: "50%",
           transform: "translateY(-50%)",
+          // make sure handle sits *behind* the add button
+          zIndex: 1,
+          // if you don't need the handle to accept clicks at that exact spot,
+          // you can also disable pointer events and leave it for visual only:
+          // pointerEvents: 'none'
         }}
       />
     </div>
