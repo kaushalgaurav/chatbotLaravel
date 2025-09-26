@@ -9,6 +9,6 @@
   'resources/scss/bootstrap.scss',
   'resources/scss/icons.scss',
   'resources/scss/app.scss',
-  'resources/css/custom.css',
+  'resources/scss/custom.scss',
 ]); ?>
 <?php /**PATH /var/www/html/chatbotLaravel/resources/views/layouts/head-css.blade.php ENDPATH**/ ?>

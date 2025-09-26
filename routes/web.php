@@ -38,6 +38,7 @@ Route::get('index/{locale}', [HomeController::class, 'lang']);
 Route::get('/chatbots/details/{id}', [ChatbotController::class, 'details'])->name('chatbots.details');
 
 Route::get('chatbots/list', [ChatbotController::class, 'getChatbotList'])->name('chatbots.list');
+Route::post('chatbots/store', [ChatbotController::class, 'store'])->name('chatbots.store');
 Route::get('chatbots/{chatbot}/build', [ChatbotController::class, 'buildChatbot'])->name('chatbots.build');
 Route::put('chatbots/{id}', [ChatbotController::class, 'update'])->name('chatbots.update');
 
@@ -47,5 +48,6 @@ Route::resource('chatbots', ChatbotController::class);
 // for preview test.html
 Route::view('/bot/preview/{id}', 'chatbots.preview')->name('bot.preview');
 Route::view('/bot/preview/{id}/{any?}', 'chatbots.preview')->where('any', '.*');
-
-
+Route::post('/chatbot/publish', [ChatbotController::class, 'publish'])->name('chatbot.publish');
+Route::get('/chatbot/history/{bot_id}', [ChatbotController::class, 'history'])->name('chatbot.history');
+Route::get('/publish-chatbot/{bot_id}', [ChatbotController::class, 'getPublishedChatbot'])->name('publish.chatbot');

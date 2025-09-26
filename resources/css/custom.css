@@ -298,7 +298,7 @@ body[data-sidebar="dark"].vertical-collpsed {
 .text-left {
   text-align: left !important;
 }
-.sidebar-workspace-right .btn {
+.sidebar-workspace-right .btn, .chatbot-builder .btn {
   height: 42px;
   padding: 0px 16px;
   white-space: nowrap;

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Chatbot;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -9,15 +10,13 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Session;
 
-class HomeController extends Controller
-{
+class HomeController extends Controller {
     /**
      * Create a new controller instance.
      *
      * @return void
      */
-    public function __construct()
-    {
+    public function __construct() {
         // $this->middleware(['auth', 'verified']);
     }
 
@@ -26,8 +25,7 @@ class HomeController extends Controller
      *
      * @return \Illuminate\Contracts\Support\Renderable
      */
-    public function index(Request $request)
-    {
+    public function index(Request $request) {
 
         $viewName = str_replace('/', '.', $request->path()); // convert "users-list" → "users.list"
 
@@ -40,21 +38,13 @@ class HomeController extends Controller
         return abort(404);
     }
 
-    public function root()
-    {
-        return view('dashboard.index');
+    public function root() {
+        $chatbots = Chatbot::select(['id', 'name', 'description', 'created_at', 'platform', 'created_at', 'updated_at'])->where('user_id', Auth::user()->id)->orderBy('created_at', 'desc')->get();
+        return view('dashboard.index', compact('chatbots'));
     }
 
-
-   public function workspace()
-{
-    return view('workspace.index');
-}
-
-
     /*Language Translation*/
-    public function lang($locale)
-    {
+    public function lang($locale) {
         if ($locale) {
             App::setLocale($locale);
             Session::put('lang', $locale);
@@ -65,8 +55,7 @@ class HomeController extends Controller
         }
     }
 
-    public function updateProfile(Request $request, $id)
-    {
+    public function updateProfile(Request $request, $id) {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email'],
@@ -103,8 +92,7 @@ class HomeController extends Controller
         }
     }
 
-    public function updatePassword(Request $request, $id)
-    {
+    public function updatePassword(Request $request, $id) {
         $request->validate([
             'current_password' => ['required', 'string'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
@@ -136,7 +124,4 @@ class HomeController extends Controller
             }
         }
     }
-
-
-
 }
