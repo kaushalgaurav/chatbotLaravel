@@ -269,6 +269,7 @@ body[data-sidebar="dark"].vertical-collpsed {
 }
 .bot-search {
 	position: relative;
+	width: 300px;
 	.form-control {
 		border: 0px;
 		background: #f0f0f0;
@@ -433,7 +434,6 @@ $background-color_1: transparent;
 	border-color: #556ee6;
 	box-shadow: none;
 }
-
 .ml-16{
 	margin-left:16px !important;
 }
@@ -441,5 +441,8 @@ $background-color_1: transparent;
   display: inline-flex;
   width: 100%;
   color: #74788d;
+}
+.sidebar-enable .sidebar-user-name {
+  display: none;
 }
 /* End custom css*/

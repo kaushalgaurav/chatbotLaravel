@@ -13,18 +13,9 @@
 
 
     <div class="navbar-brand-box">
-        <a href="{{ route('root') }}" class="logo logo-dark">
-            <span class="logo-sm">
-                <img src="{{ URL::asset('build/images/logo/logo.svg') }}" alt="" height="22">
-            </span>
-            <span class="logo-lg">
-                <img src="{{ URL::asset('build/images/logo/nimbli_ai_logo.png') }}" alt="" height="25">
-            </span>
-        </a>
-
         <a href="{{ route('root') }}" class="logo logo-light">
-            <span class="logo-sm">
-                <img src="{{ URL::asset('build/images/logo/logo-light.svg') }}" alt="" height="22">
+            <span class="logo-sm logo-sm-custom">
+                <img src="{{ URL::asset('build/images/logo/logo-sm-custom.png') }}" alt="" height="28">
             </span>
             <span class="logo-lg">
                 <img src="{{ URL::asset('build/images/logo/nimbli_ai_logowht.png') }}" alt="" height="25">
@@ -76,8 +67,10 @@
         <div class="dropdown d-inline-block user-dropdown-fixed">
             <button type="button" class="btn header-item waves-effect w-100 text-left" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <img class="rounded-circle header-profile-user" src="{{ isset(Auth::user()->avatar) ? asset(Auth::user()->avatar) : asset('build/images/users/avatar-1.jpg') }}" alt="Header Avatar">
+                <span class="sidebar-user-name" key="t-henry">
                 <span class="d-none d-xl-inline-block ms-1 color-white" key="t-henry">{{ ucfirst(Auth::user()->name) }}</span>
                 <i class="mdi mdi-chevron-down d-none d-xl-inline-block color-white"></i>
+                </span>
             </button>
             <div class="dropdown-menu dropdown-menu-end">
                 <!-- item-->
@@ -96,8 +89,6 @@
         </div>
         <!-- End Sidebar -->
     </div>
-
-
 
 </div>
 <!-- Left Sidebar End -->
