@@ -133,6 +133,7 @@ class ChatbotController extends Controller {
             'user_id'    => 'required|integer',
             'chatbot_id' => 'required|integer',
             'json'       => 'required|array',
+            'is_published' => 'sometimes|integer',
         ]);
 
         // Check existing record
@@ -144,7 +145,7 @@ class ChatbotController extends Controller {
                 ->orderByDesc('version')
                 ->first();
             $nextVersion = $lastHistory ? $lastHistory->version + 1 : 1;
-
+            dd($_REQUEST);
             // Save history with version
             ChatbotPublicationHistory::create([
                 'publication_id' => $publication->id,
@@ -152,6 +153,7 @@ class ChatbotController extends Controller {
                 'new_payload'    => $validated['json'],
                 'changed_by'     => $validated['user_id'],
                 'version'        => $nextVersion,
+                'is_published'   => $validated['is_published'] ?? 0,
             ]);
 
             // Update publication
@@ -159,6 +161,7 @@ class ChatbotController extends Controller {
                 'user_id'    => $validated['user_id'],
                 'chatbot_id' => $validated['chatbot_id'],
                 'payload'    => $validated['json'],
+                'is_published' => $validated['is_published'] ?? $publication->is_published,
             ]);
 
             $message = 'Chatbot updated successfully';
@@ -169,6 +172,7 @@ class ChatbotController extends Controller {
                 'user_id'    => $validated['user_id'],
                 'chatbot_id' => $validated['chatbot_id'],
                 'payload'    => $validated['json'],
+                'is_published' => $validated['is_published'] ?? 0,
             ]);
 
             // first history entry (v1)
@@ -178,6 +182,7 @@ class ChatbotController extends Controller {
                 'new_payload'    => $validated['json'],
                 'changed_by'     => $validated['user_id'],
                 'version'        => 1,
+                'is_published'   => $validated['is_published'] ?? 0,
             ]);
 
             $message = 'Chatbot published successfully';

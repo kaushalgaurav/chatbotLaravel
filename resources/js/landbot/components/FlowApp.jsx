@@ -11,6 +11,7 @@ import AnimatedEdge from "../components/AnimatedEdge";
 
 const PUBLISH_KEY = "published-flow:v1";
 const PUBLISH_API = "http://127.0.0.1:8000/chatbot/publish";
+const AUTOSAVE_INTERVAL_MS = 10000; 
 
 export default function FlowApp() {
   // -----------------------
@@ -26,11 +27,18 @@ export default function FlowApp() {
   const [popup, setPopup] = useState({ visible: false, x: 0, y: 0, sourceId: null });
   const [undoSnapshot, setUndoSnapshot] = useState(null);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
+   const [manualPublishing, setManualPublishing] = useState(false);
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
-
   const { zoomIn, zoomOut, fitView, toObject } = useReactFlow();
   const zoom = useStore(s => s.transform[2]);
   const edgeTypes = useMemo(() => ({ animated: AnimatedEdge }), []);
+  
+
+  // -----------------------
+  // Autosave control refs (NEW)
+  // -----------------------
+  const pauseAutosaveUntilNodeAddRef = useRef(false); // when true, autosave is paused until new node added
+  const lastNodesCountRef = useRef(nodes.length || 0); // baseline to detect new node additions
 
   // -----------------------
   // Helpers
@@ -68,6 +76,50 @@ export default function FlowApp() {
   const { publishing, toast, publish, clearToast } = usePublish(getFlowSnapshot, {
     apiUrl: PUBLISH_API
   });
+
+  // -----------------------
+  // Autosave every 10s (to publish API) — saves draft with is_published: false (silent)
+  // Paused after manual publish until a new node is added
+  // -----------------------
+  useEffect(() => {
+    if (!PUBLISH_API) return;
+
+    let mounted = true;
+    const id = setInterval(() => {
+      (async () => {
+        if (!mounted) return;
+        if (publishing) return;
+        if (pauseAutosaveUntilNodeAddRef.current) return; // PAUSED after manual publish until node add
+        try {
+          await publish({ is_published: false, skipValidation: true, silent: true });
+        } catch (e) {
+          console.error("Autosave publish error", e);
+        }
+      })();
+    }, AUTOSAVE_INTERVAL_MS);
+
+    return () => {
+      mounted = false;
+      clearInterval(id);
+    };
+  }, [publish, publishing]);
+
+  // -----------------------
+  // Detect node additions and resume autosave if paused
+  // -----------------------
+  useEffect(() => {
+    const currentCount = nodes.length || 0;
+
+    // If autosave is paused waiting for node-add and a node is added -> resume
+    if (pauseAutosaveUntilNodeAddRef.current && currentCount > (lastNodesCountRef.current || 0)) {
+      pauseAutosaveUntilNodeAddRef.current = false;
+      lastNodesCountRef.current = currentCount;
+      console.info("Autosave resumed: new node detected.");
+    } else {
+      // keep baseline up to date
+      lastNodesCountRef.current = currentCount;
+    }
+  }, [nodes]);
 
   // -----------------------
   // Node / Edge handlers
@@ -166,11 +218,41 @@ export default function FlowApp() {
   }, [nodes, edges]);
 
   // -----------------------
+  // Manual publish handler (PAUSES autosave until new node added)
+  // -----------------------
+   // -----------------------
+  // Manual publish handler (PAUSES autosave until new node added)
+  // Also track manualPublishing to avoid showing publish spinner for autosave
+  // -----------------------
+  const handlePublish = useCallback(async () => {
+    try {
+      setManualPublishing(true); // start manual spinner
+      const res = await publish({ is_published: true, skipValidation: false });
+      // res.ok true means publish succeeded according to usePublish
+      if (res && res.ok) {
+        // pause autosave until user adds a new node
+        pauseAutosaveUntilNodeAddRef.current = true;
+        // set baseline node count
+        lastNodesCountRef.current = nodes.length || 0;
+        console.info("Publish succeeded — autosave paused until a new node is added.");
+      } else {
+        // optional: handle non-ok result (toast already shown by usePublish)
+        console.warn("Publish returned non-ok result", res);
+      }
+    } catch (err) {
+      console.error("Publish error", err);
+    } finally {
+      setManualPublishing(false); // stop manual spinner
+    }
+  }, [publish, nodes.length]);
+
+
+  // -----------------------
   // Render
   // -----------------------
   return (
     <div className="h-screen flex flex-col">
-      <Topbar onTest={() => setOpenChat(true)} onPublish={publish} publishing={publishing} />
+      <Topbar onTest={() => setOpenChat(true)} onPublish={handlePublish} publishing={manualPublishing} />
 
       <div style={{ width: "100%", height: "calc(100vh - 56px)" }}>
         <ReactFlow
