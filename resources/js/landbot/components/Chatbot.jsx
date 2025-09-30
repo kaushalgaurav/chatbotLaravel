@@ -72,6 +72,16 @@ export default function Chatbot({ nodes = [], edges = [], onClose }) {
                 {opt}
               </button>
             ))}
+
+            {currentNode.data?.fallbackLabel && (
+              <button
+                className="btn btn-outline-secondary btn-sm text-start"
+                onClick={() => clickButton(currentNode.data.fallbackLabel, "fallback")}
+                type="button"
+                >
+                  {currentNode.data.fallbackLabel}
+                </button>            
+            )}
           </div>
         )}
 

@@ -57,104 +57,111 @@ export default function usePublish(getFlowSnapshot, options = {}) {
    *   skipValidation: boolean (default false) - useful for autosave/drafts
    * }
    */
-const publish = useCallback(async (opts = {}) => {
-  const { is_published = false, skipValidation = false, silent = false } = opts;
+  const publish = useCallback(async (opts = {}) => {
+    const { is_published = false, skipValidation = false, silent = false } = opts;
 
-  // Prevent overlapping publishes
-  if (publishingRef.current) {
-    // already publishing; skip this invocation
-    return { ok: false, skipped: true, reason: "Already publishing" };
-  }
-
-  setPublishing(true);
-  publishingRef.current = true;
-
-  try {
-    const flow = getFlowSnapshot();
-
-    if (!skipValidation) {
-      const v = validateFlow(flow);
-      if (!v.ok) {
-        if (!silent) setToast({ type: "error", message: v.reason });
-        setPublishing(false);
-        publishingRef.current = false;
-        return { ok: false, reason: v.reason };
-      }
+    // Prevent overlapping publishes
+    if (publishingRef.current) {
+      // already publishing; skip this invocation
+      return { ok: false, skipped: true, reason: "Already publishing" };
     }
 
-    // read latest chatbotId/userId at publish time (handles switching bots)
-    const root = typeof document !== "undefined" ? document.getElementById("root") : null;
-    const chatbotId = root?.dataset?.chatbotId ?? "";
-    const userId = root?.dataset?.userId ?? "";
-    
-    const now = Date.now();
-    const versionId = `v-${now}`;
-    const iso = new Date(now).toISOString();
+    setPublishing(true);
+    publishingRef.current = true;
 
-    const version = {
-      id: versionId,
-      date: iso,
-      bot_id: versionId,
-      chatbot_id: String(chatbotId),
-      user_id: String(userId),
-      payload: flow,
-      is_published: !!is_published,
-    };
-
-    // local save (scoped per chatbot)
     try {
-      const scopedKey = `${PUBLISH_KEY}:${String(chatbotId) || "anon"}`;
-      const raw = typeof localStorage !== "undefined" ? localStorage.getItem(scopedKey) : null;
-      const published = raw ? JSON.parse(raw) : { versions: [] };
-      published.versions.push(version);
-      if (published.versions.length > MAX_VERSIONS) published.versions = published.versions.slice(-MAX_VERSIONS);
-      if (typeof localStorage !== "undefined") localStorage.setItem(scopedKey, JSON.stringify(published));
-    } catch (e) { /* ignore localStorage errors */ }
+      const flow = getFlowSnapshot();
 
-    // prepare API payload (only necessary fields)
-    const nodesArray = Array.isArray(flow?.nodes) ? flow.nodes : [];
+      if (!skipValidation) {
+        const v = validateFlow(flow);
+        if (!v.ok) {
+          if (!silent) setToast({ type: "error", message: v.reason });
+          setPublishing(false);
+          publishingRef.current = false;
+          return { ok: false, reason: v.reason };
+        }
+      }
 
-    if (apiUrl) {
-      const apiPayload = {
-        bot_id: versionId,
-        user_id: String(userId),
+      // read latest chatbotId/userId at publish time (handles switching bots)
+      const root = typeof document !== "undefined" ? document.getElementById("root") : null;
+      const chatbotId = root?.dataset?.chatbotId ?? "";
+      const userId = root?.dataset?.userId ?? "";
+      const now = Date.now();
+      const versionId = `v-${now}`;
+      const iso = new Date(now).toISOString();
+
+      // ---- BOT ID (constant per chatbot) ----
+      let botIdKey = `bot_id:${String(chatbotId) || "anon"}`;
+      let botId = localStorage.getItem(botIdKey);
+      if (!botId) {
+        botId = `v-${now}`; // first time = generate
+        localStorage.setItem(botIdKey, botId);
+      }
+
+      const version = {
+        id: versionId,
+        date: iso,
+        bot_id: botId,
         chatbot_id: String(chatbotId),
-        is_published: Number(!!is_published),
+        user_id: String(userId),
         payload: flow,
-        json: nodesArray, 
+        is_published: !!is_published,
       };
 
-      const res = await sendToApi(apiPayload);
-      if (!res.ok) {
-        const msg = res.message || res.error || "Remote publish failed";
-        if (!silent) setToast({ type: "error", message: `Remote publish failed: ${msg}. Saved locally.` });
-        setPublishing(false);
-        publishingRef.current = false;
-        return { ok: false, reason: msg };
+      // local save (scoped per chatbot)
+      try {
+        const scopedKey = `${PUBLISH_KEY}:${String(chatbotId) || "anon"}`;
+        const raw = typeof localStorage !== "undefined" ? localStorage.getItem(scopedKey) : null;
+        const published = raw ? JSON.parse(raw) : { versions: [] };
+        published.versions.push(version);
+        if (published.versions.length > MAX_VERSIONS) published.versions = published.versions.slice(-MAX_VERSIONS);
+        if (typeof localStorage !== "undefined") localStorage.setItem(scopedKey, JSON.stringify(published));
+      } catch (e) { /* ignore localStorage errors */ }
+
+      // prepare API payload (only necessary fields)
+      const nodesArray = Array.isArray(flow?.nodes) ? flow.nodes : [];
+
+      if (apiUrl) {
+        const apiPayload = {
+          bot_id: botId,
+          user_id: String(userId),
+          chatbot_id: String(chatbotId),
+          is_published: Number(!!is_published),
+          payload: flow,
+          json: nodesArray,
+        };
+
+        const res = await sendToApi(apiPayload);
+        if (!res.ok) {
+          const msg = res.message || res.error || "Remote publish failed";
+          if (!silent) setToast({ type: "error", message: `Remote publish failed: ${msg}. Saved locally.` });
+          setPublishing(false);
+          publishingRef.current = false;
+          return { ok: false, reason: msg };
+        } else {
+          if (!silent) {
+            setToast({ type: "success", message: is_published ? "Bot published successfully (remote)." : "Draft saved remotely." });
+          }
+        }
       } else {
         if (!silent) {
-          setToast({ type: "success", message: is_published ? "Bot published successfully (remote)." : "Draft saved remotely." });
-        } 
+          setToast({ type: "success", message: is_published ? "Bot published locally." : "Draft saved locally." });
+        }
       }
-    } else {
-      if (!silent) {
-        setToast({ type: "success", message: is_published ? "Bot published locally." : "Draft saved locally." });
-      }
+
+      try { window.dispatchEvent(new CustomEvent("botPublished", { detail: { latestId: version.id, is_published: !!is_published } })); } catch (e) { }
+
+      setPublishing(false);
+      publishingRef.current = false;
+      return { ok: true, versionId };
+    } catch (err) {
+      console.error("Publish failed", err);
+      if (!silent) setToast({ type: "error", message: "Publish failed.  Check console." });
+      setPublishing(false);
+      publishingRef.current = false;
+      return { ok: false, error: err.message || String(err) };
     }
-
-    try { window.dispatchEvent(new CustomEvent("botPublished", { detail: { latestId: version.id, is_published: !!is_published } })); } catch (e) { }
-
-    setPublishing(false);
-    publishingRef.current = false;
-    return { ok: true, versionId };
-  } catch (err) {
-    console.error("Publish failed", err);
-    if (!silent) setToast({ type: "error", message: "Publish failed.  Check console." });
-    setPublishing(false);
-    publishingRef.current = false;
-    return { ok: false, error: err.message || String(err) };
-  }
-}, [getFlowSnapshot, validateFlow, apiUrl, sendToApi]);
+  }, [getFlowSnapshot, validateFlow, apiUrl, sendToApi]);
 
 
   const clearToast = useCallback(() => setToast(null), []);
