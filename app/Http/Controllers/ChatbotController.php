@@ -128,81 +128,81 @@ class ChatbotController extends Controller {
     }
 
     public function publish(Request $request) {
-    $validated = $request->validate([
-        'bot_id'       => 'required|string|max:100',
-        'user_id'      => 'required|integer',
-        'chatbot_id'   => 'required|integer',
-        'json'         => 'required|array',
-        'is_published' => 'sometimes|integer',
-    ]);
-
-    $isPublished = $validated['is_published'] ?? 0;
-    
-
-    // Check existing record
-    $publication = ChatbotPublication::where('bot_id', $validated['bot_id'])->first();
-
-    if ($publication) {
-        // Calculate next version
-        $lastHistory = ChatbotPublicationHistory::where('publication_id', $publication->id)
-            ->orderByDesc('version')
-            ->first();
-        $nextVersion = $lastHistory ? $lastHistory->version + 1 : 1;
-
-        // ✅ Update publication
-        $publication->update([
-            'user_id'      => $validated['user_id'],
-            'chatbot_id'   => $validated['chatbot_id'],
-            'payload'      => $validated['json'],
-            'is_published' => $isPublished,
-            'status'       => $isPublished,
+        $validated = $request->validate([
+            'bot_id'       => 'required|string|max:100',
+            'user_id'      => 'required|integer',
+            'chatbot_id'   => 'required|integer',
+            'json'         => 'required|array',
+            'is_published' => 'sometimes|integer',
         ]);
 
-        // ✅ Save history ONLY if published
-        if ($isPublished == 1) {
-            ChatbotPublicationHistory::create([
-                'publication_id' => $publication->id,
-                'old_payload'    => $publication->getOriginal('payload'),
-                'new_payload'    => $validated['json'],
-                'changed_by'     => $validated['user_id'],
-                'version'        => $nextVersion,
-                'is_published'   => $isPublished,
+        $isPublished = $validated['is_published'] ?? 0;
+
+
+        // Check existing record
+        $publication = ChatbotPublication::where('bot_id', $validated['bot_id'])->first();
+
+        if ($publication) {
+            // Calculate next version
+            $lastHistory = ChatbotPublicationHistory::where('publication_id', $publication->id)
+                ->orderByDesc('version')
+                ->first();
+            $nextVersion = $lastHistory ? $lastHistory->version + 1 : 1;
+
+            // ✅ Update publication
+            $publication->update([
+                'user_id'      => $validated['user_id'],
+                'chatbot_id'   => $validated['chatbot_id'],
+                'payload'      => $validated['json'],
+                'is_published' => $isPublished,
+                'status'       => $isPublished,
             ]);
+
+            // ✅ Save history ONLY if published
+            if ($isPublished == 1) {
+                ChatbotPublicationHistory::create([
+                    'publication_id' => $publication->id,
+                    'old_payload'    => $publication->getOriginal('payload'),
+                    'new_payload'    => $validated['json'],
+                    'changed_by'     => $validated['user_id'],
+                    'version'        => $nextVersion,
+                    'is_published'   => $isPublished,
+                ]);
+            }
+
+            $message = 'Chatbot updated successfully';
+        } else {
+            // Create new publication
+            $publication = ChatbotPublication::create([
+                'bot_id'       => $validated['bot_id'],
+                'user_id'      => $validated['user_id'],
+                'chatbot_id'   => $validated['chatbot_id'],
+                'payload'      => $validated['json'],
+                'is_published' => $isPublished,
+                'status'       => $isPublished,
+            ]);
+
+            // ✅ Only create history if published
+            if ($isPublished == 1) {
+                ChatbotPublicationHistory::create([
+                    'publication_id' => $publication->id,
+                    'old_payload'    => [],
+                    'new_payload'    => $validated['json'],
+                    'changed_by'     => $validated['user_id'],
+                    'version'        => 1,
+                    'is_published'   => 1,
+                ]);
+            }
+
+            $message = 'Chatbot published successfully';
         }
 
-        $message = 'Chatbot updated successfully';
-    } else {
-        // Create new publication
-        $publication = ChatbotPublication::create([
-            'bot_id'       => $validated['bot_id'],
-            'user_id'      => $validated['user_id'],
-            'chatbot_id'   => $validated['chatbot_id'],
-            'payload'      => $validated['json'],
-            'is_published' => $isPublished,
-            'status'       => $isPublished,
-        ]);
-
-        // ✅ Only create history if published
-        if ($isPublished == 1) {
-            ChatbotPublicationHistory::create([
-                'publication_id' => $publication->id,
-                'old_payload'    => [],
-                'new_payload'    => $validated['json'],
-                'changed_by'     => $validated['user_id'],
-                'version'        => 1,
-                'is_published'   => 1,
-            ]);
-        }
-
-        $message = 'Chatbot published successfully';
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data'    => $publication,
+        ], 200);
     }
-
-    return response()->json([
-        'success' => true,
-        'message' => $message,
-        'data'    => $publication,
-    ], 200);
-}
 
 
     public function history($bot_id) {
@@ -251,5 +251,25 @@ class ChatbotController extends Controller {
                 'created_at'  => $publication->created_at,
             ]
         ]);
+    }
+
+    public function designChatbot($encryptedId) {
+        $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
+        return view('chatbots.design', compact('chatbot'));
+    }
+
+    public function settingChatbot($encryptedId) {
+        $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
+        return view('chatbots.settings', compact('chatbot'));
+    }
+
+    public function shareChatbot($encryptedId) {
+        $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
+        return view('chatbots.share', compact('chatbot'));
+    }
+
+    public function analyzeChatbot($encryptedId) {
+        $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
+        return view('chatbots.analyze', compact('chatbot'));
     }
 }

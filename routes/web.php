@@ -41,7 +41,10 @@ Route::get('chatbots/list', [ChatbotController::class, 'getChatbotList'])->name(
 Route::post('chatbots/store', [ChatbotController::class, 'store'])->name('chatbots.store');
 Route::get('chatbots/{chatbot}/build', [ChatbotController::class, 'buildChatbot'])->name('chatbots.build');
 Route::put('chatbots/{id}', [ChatbotController::class, 'update'])->name('chatbots.update');
-
+Route::get('chatbots/{chatbot}/design', [ChatbotController::class, 'designChatbot'])->name('chatbots.design');
+Route::get('chatbots/{chatbot}/settings', [ChatbotController::class, 'settingChatbot'])->name('chatbots.settings');
+Route::get('chatbots/{chatbot}/share', [ChatbotController::class, 'shareChatbot'])->name('chatbots.share');
+Route::get('chatbots/{chatbot}/analyze', [ChatbotController::class, 'analyzeChatbot'])->name('chatbots.analyze');
 Route::resource('chatbots', ChatbotController::class);
 
 
