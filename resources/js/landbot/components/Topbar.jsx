@@ -120,7 +120,7 @@ export default function Topbar({ onTest, onPublish, publishing = false }) {
       {/* Right: Buttons */}
       <div className="ms-auto d-flex align-items-center gap-4">
         <button onClick={onTest} className="btn  px-3 py-2 fs-5 fw-bold"
-        style={{ border: "2px solid #db2777", color: "#db2777",}}
+          style={{ border: "2px solid #db2777", color: "#db2777", }}
         >
           Test this bot
         </button>
@@ -128,8 +128,11 @@ export default function Topbar({ onTest, onPublish, publishing = false }) {
         <button
           onClick={onPublish}
           disabled={publishing}
-          className={`btn px-3 py-2 fs-5 text-white  fw-bold ${publishing ? "btn-secondary disabled" : "btn-danger"
-            }`}
+          className="btn px-3 py-2 fs-5 fw-bold text-white"
+          style={{
+            backgroundColor: publishing ? "#6c757d" : "#db2777", // gray if disabled, pink if active
+            borderColor: publishing ? "#6c757d" : "#db2777",
+          }}
           aria-busy={publishing}
         >
           {publishing ? (
@@ -145,6 +148,7 @@ export default function Topbar({ onTest, onPublish, publishing = false }) {
             "Publish"
           )}
         </button>
+
       </div>
     </div>
   );

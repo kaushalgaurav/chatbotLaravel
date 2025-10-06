@@ -47,10 +47,20 @@ export default function useChatbotEngine({ nodes = [], edges = [], startNodeId =
 
   // Go to next node by matching outgoing edges (optionally by handle)
   const goToNext = (handleId = null) => {
-    const nextEdge = safeEdges.find(e => e.source === currentNodeId && (handleId ? e.sourceHandle === handleId : true));
+    let nextEdge = safeEdges.find(
+      e => e.source === currentNodeId && (handleId ? e.sourceHandle === handleId : true)
+    );
+
+    if (!nextEdge && handleId) {
+      nextEdge = safeEdges.find(
+        e => e.source === currentNodeId && e.sourceHandle === "fallback"
+      );
+    }
+
     if (nextEdge) setCurrentNodeId(nextEdge.target);
     else setCurrentNodeId(null);
   };
+
 
   // Store input and then navigate
   const submitInput = () => {

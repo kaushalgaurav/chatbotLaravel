@@ -9,7 +9,7 @@ class ChatbotPublication extends Model {
 
     use HasFactory;
 
-    protected $fillable = ['bot_id', 'payload', 'status', 'user_id', 'chatbot_id'];
+    protected $fillable = ['bot_id', 'payload', 'status', 'user_id', 'chatbot_id', 'is_published'];
 
     protected $casts = [
         'payload' => 'array', // automatically cast to array/json
