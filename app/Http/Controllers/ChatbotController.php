@@ -270,44 +270,45 @@ class ChatbotController extends Controller {
     }
 
     public function analyzeChatbot($encryptedId) {
-        dd('analyzeChatbot');
-        $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
-        $chatbotId = $chatbot->id;
-        $publishedBot = Publication::where('chatbot_id', $chatbotId)->where('is_published', 1)->first();
-        // if (!$publishedBot) {
-        //     return redirect()
-        //         ->route('chatbots.index')
-        //         ->with('error', 'Chatbot is not published yet. Please publish to analyze conversations.');
+        // dd('analyzeChatbot');
+        // $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
+        // $chatbotId = $chatbot->id;
+        // $publishedBot = Publication::where('chatbot_id', $chatbotId)->where('is_published', 1)->first();
+        // // if (!$publishedBot) {
+        // //     return redirect()
+        // //         ->route('chatbots.index')
+        // //         ->with('error', 'Chatbot is not published yet. Please publish to analyze conversations.');
+        // // }
+        // $botId = $publishedBot->bot_id;
+        // // return view('chatbots.analyze', compact('chatbot'));
+        // // Fetch all conversations for this bot, grouped by conversation_id
+        // $conversations = Conversation::where('bot_id', $botId)
+        //     ->orderBy('conversation_id')
+        //     ->orderBy('created_at')
+        //     ->get()
+        //     ->groupBy('conversation_id');
+
+        // // Prepare table data: bot messages as headers, user responses as rows
+        // $tableData = [];
+        // foreach ($conversations as $convId => $messages) {
+        //     $row = [];
+        //     foreach ($messages as $msg) {
+        //         if ($msg->sender === 'bot') {
+        //             $currentBotMessage = $msg->message;
+        //             if (!isset($tableData[$currentBotMessage])) {
+        //                 $tableData[$currentBotMessage] = [];
+        //             }
+        //         } elseif ($msg->sender === 'user') {
+        //             $tableData[$currentBotMessage][] = $msg->message;
+        //         }
+        //     }
         // }
-        $botId = $publishedBot->bot_id;
-        // return view('chatbots.analyze', compact('chatbot'));
-        // Fetch all conversations for this bot, grouped by conversation_id
-        $conversations = Conversation::where('bot_id', $botId)
-            ->orderBy('conversation_id')
-            ->orderBy('created_at')
-            ->get()
-            ->groupBy('conversation_id');
 
-        // Prepare table data: bot messages as headers, user responses as rows
-        $tableData = [];
-        foreach ($conversations as $convId => $messages) {
-            $row = [];
-            foreach ($messages as $msg) {
-                if ($msg->sender === 'bot') {
-                    $currentBotMessage = $msg->message;
-                    if (!isset($tableData[$currentBotMessage])) {
-                        $tableData[$currentBotMessage] = [];
-                    }
-                } elseif ($msg->sender === 'user') {
-                    $tableData[$currentBotMessage][] = $msg->message;
-                }
-            }
-        }
+        // // Generic analytics
+        // $analytics = $this->getAnalytics($conversations);
 
-        // Generic analytics
-        $analytics = $this->getAnalytics($conversations);
-
-        return view('chatbots.analyze', compact('tableData', 'analytics'));
+        // return view('chatbots.analyze', compact('tableData', 'analytics'));
+        return view('chatbots.analyze');
     }
 
     /**
