@@ -14,19 +14,20 @@ return new class extends Migration
         Schema::create('conversations', function (Blueprint $table) {
             $table->id();
             $table->string('conversation_id'); // unique identifier for each conversation
-            $table->unsignedBigInteger('user_id'); // reference to users table
+            $table->string('bot_id', 100); // reference to publications table (varchar)
             $table->string('session_id')->nullable(); // optional session identifier
             $table->enum('sender', ['user', 'bot']); // who sent the message
             $table->text('message'); // store message content
             $table->timestamps();
 
-            // Optional foreign key if you have a users table
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            // Optional foreign key if publications.id is also string/varchar
+            // $table->foreign('bot_id')->references('id')->on('publications')->onDelete('cascade');
 
             // Index for faster lookups
             $table->index('conversation_id');
             $table->index('session_id');
         });
+
     }
 
     /**

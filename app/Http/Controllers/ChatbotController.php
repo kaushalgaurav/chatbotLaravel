@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Chatbot;
 use Illuminate\Http\Request;
 use App\Http\Requests\ChatbotRequest;
-use App\Models\ChatbotPublication;
-use App\Models\ChatbotPublicationHistory;
+use App\Models\Publication;
+use App\Models\PublicationHistory;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Auth;
@@ -140,11 +140,11 @@ class ChatbotController extends Controller {
 
 
         // Check existing record
-        $publication = ChatbotPublication::where('bot_id', $validated['bot_id'])->first();
+        $publication = Publication::where('bot_id', $validated['bot_id'])->first();
 
         if ($publication) {
             // Calculate next version
-            $lastHistory = ChatbotPublicationHistory::where('publication_id', $publication->id)
+            $lastHistory = PublicationHistory::where('publication_id', $publication->id)
                 ->orderByDesc('version')
                 ->first();
             $nextVersion = $lastHistory ? $lastHistory->version + 1 : 1;
@@ -160,7 +160,7 @@ class ChatbotController extends Controller {
 
             // ✅ Save history ONLY if published
             if ($isPublished == 1) {
-                ChatbotPublicationHistory::create([
+                PublicationHistory::create([
                     'publication_id' => $publication->id,
                     'old_payload'    => $publication->getOriginal('payload'),
                     'new_payload'    => $validated['json'],
@@ -173,7 +173,7 @@ class ChatbotController extends Controller {
             $message = 'Chatbot updated successfully';
         } else {
             // Create new publication
-            $publication = ChatbotPublication::create([
+            $publication = Publication::create([
                 'bot_id'       => $validated['bot_id'],
                 'user_id'      => $validated['user_id'],
                 'chatbot_id'   => $validated['chatbot_id'],
@@ -184,7 +184,7 @@ class ChatbotController extends Controller {
 
             // ✅ Only create history if published
             if ($isPublished == 1) {
-                ChatbotPublicationHistory::create([
+                PublicationHistory::create([
                     'publication_id' => $publication->id,
                     'old_payload'    => [],
                     'new_payload'    => $validated['json'],
@@ -207,7 +207,7 @@ class ChatbotController extends Controller {
 
     public function history($bot_id) {
         // Find the publication
-        $publication = ChatbotPublication::where('bot_id', $bot_id)->first();
+        $publication = Publication::where('bot_id', $bot_id)->first();
 
         if (!$publication) {
             return response()->json([
@@ -217,7 +217,7 @@ class ChatbotController extends Controller {
         }
 
         // Fetch all histories ordered by version
-        $histories = ChatbotPublicationHistory::where('publication_id', $publication->id)
+        $histories = PublicationHistory::where('publication_id', $publication->id)
             ->orderBy('version', 'asc')
             ->get();
 
@@ -231,7 +231,7 @@ class ChatbotController extends Controller {
 
     public function getPublishedChatbot($bot_id) {
         // Find publication by bot_id
-        $publication = ChatbotPublication::where('bot_id', $bot_id)->first();
+        $publication = Publication::where('bot_id', $bot_id)->first();
 
         if (!$publication) {
             return response()->json([

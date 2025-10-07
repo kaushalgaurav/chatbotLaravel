@@ -9,7 +9,7 @@ return new class extends Migration {
      * Run the migrations.
      */
     public function up(): void {
-        Schema::create('chatbot_publication_histories', function (Blueprint $table) {
+        Schema::create('publication_histories', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('publication_id'); // link to chatbot_publications.id
             $table->json('old_payload');
