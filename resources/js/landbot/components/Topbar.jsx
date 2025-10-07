@@ -3,153 +3,154 @@ import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
-
 export default function Topbar({ onTest, onPublish, publishing = false }) {
-  const [botName, setBotName] = useState("My Chatbot");
-  const [editing, setEditing] = useState(false);
-  const navigate = useNavigate();
+    const [botName, setBotName] = useState("My Chatbot");
+    const [editing, setEditing] = useState(false);
+    const navigate = useNavigate();
 
-  const linkClass =
-    "text-decoration-none text-dark px-2 py-1 position-relative";
+    const linkClass =
+        "text-decoration-none text-dark px-2 py-1 position-relative";
 
-  const handleBack = () => {
-    if (typeof onBack === "function") {
-      onBack();
-      return;
-    }
+    const handleBack = () => {
+        if (typeof onBack === "function") {
+            onBack();
+            return;
+        }
 
-    // default: try history back, otherwise go to root
-    try {
-      navigate(-1);
-    } catch (e) {
-      navigate("/");
-    }
-  };
+        // default: try history back, otherwise go to root
+        try {
+            navigate(-1);
+        } catch (e) {
+            navigate("/");
+        }
+    };
 
-  return (
-    <div className="d-flex align-items-center px-5 py-3 bg-white shadow-sm position-relative">
-      {/* Left: Logo + Bot Name */}
-      <div className="d-flex align-items-center gap-3">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="btn btn-link p-0 d-flex align-items-center"
-          style={{ color: "#db2777" }} // pink arrow color
-          title="Back"
-          aria-label="Back"
-        >
-          <ArrowLeft size={26} strokeWidth={2.5} />
-        </button>
+    return (
+        <div className="d-flex align-items-center px-5 py-3 bg-white shadow-sm position-relative">
+            {/* Left: Logo + Bot Name */}
+            <div className="d-flex align-items-center gap-3">
+                <button
+                    type="button"
+                    onClick={handleBack}
+                    className="btn btn-link p-0 d-flex align-items-center"
+                    style={{ color: "#db2777" }} // pink arrow color
+                    title="Back"
+                    aria-label="Back"
+                >
+                    <ArrowLeft size={26} strokeWidth={2.5} />
+                </button>
 
+                <img
+                    src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS1szHkm1MJL1Fd9d-QoC2rYC-mBxyAqRWkTA&s"
+                    alt="Logo"
+                    style={{ width: 36, height: 36 }}
+                />
 
-        <img
-          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS1szHkm1MJL1Fd9d-QoC2rYC-mBxyAqRWkTA&s"
-          alt="Logo"
-          style={{ width: 36, height: 36 }}
-        />
+                {editing ? (
+                    <input
+                        type="text"
+                        className="form-control form-control-sm fs-4 fw-bold border-0 border-bottom"
+                        style={{ width: "220px" }}
+                        value={botName}
+                        autoFocus
+                        onChange={(e) => setBotName(e.target.value)}
+                        onBlur={() => setEditing(false)}
+                        onKeyDown={(e) =>
+                            e.key === "Enter" && setEditing(false)
+                        }
+                    />
+                ) : (
+                    <h4
+                        className="fw-bold mb-0 text-truncate"
+                        style={{ cursor: "pointer", maxWidth: "220px" }}
+                        onClick={() => setEditing(true)}
+                        title="Click to edit bot name"
+                    >
+                        {botName}
+                    </h4>
+                )}
+            </div>
 
-        {editing ? (
-          <input
-            type="text"
-            className="form-control form-control-sm fs-4 fw-bold border-0 border-bottom"
-            style={{ width: "220px" }}
-            value={botName}
-            autoFocus
-            onChange={(e) => setBotName(e.target.value)}
-            onBlur={() => setEditing(false)}
-            onKeyDown={(e) => e.key === "Enter" && setEditing(false)}
-          />
-        ) : (
-          <h4
-            className="fw-bold mb-0 text-truncate"
-            style={{ cursor: "pointer", maxWidth: "220px" }}
-            onClick={() => setEditing(true)}
-            title="Click to edit bot name"
-          >
-            {botName}
-          </h4>
-        )}
-      </div>
+            {/* Center: Navigation */}
+            <div className="position-absolute start-50 translate-middle-x">
+                <div className="d-flex gap-5 fw-bold fs-4">
+                    <NavLink
+                        to={`${window.laravelData.chatbotUrl}/build`}
+                        className={({ isActive }) =>
+                            `${linkClass} ${isActive ? "active-link" : ""}`
+                        }
+                    >
+                        Build
+                    </NavLink>
+                    <NavLink
+                        to={`${window.laravelData.chatbotUrl}/design`}
+                        className={({ isActive }) =>
+                            `${linkClass} ${isActive ? "active-link" : ""}`
+                        }
+                    >
+                        Design
+                    </NavLink>
+                    <NavLink
+                        to={`${window.laravelData.chatbotUrl}/settings`}
+                        className={({ isActive }) =>
+                            `${linkClass} ${isActive ? "active-link" : ""}`
+                        }
+                    >
+                        Setting
+                    </NavLink>
+                    <NavLink
+                        to={`${window.laravelData.chatbotUrl}/share`}
+                        className={({ isActive }) =>
+                            `${linkClass} ${isActive ? "active-link" : ""}`
+                        }
+                    >
+                        Share
+                    </NavLink>
+                    <NavLink
+                        to={`${window.laravelData.chatbotUrl}/analyze`}
+                        className={({ isActive }) =>
+                            `${linkClass} ${isActive ? "active-link" : ""}`
+                        }
+                    >
+                        Analyze
+                    </NavLink>
+                </div>
+            </div>
 
-      {/* Center: Navigation */}
-      <div className="position-absolute start-50 translate-middle-x">
-        <div className="d-flex gap-5 fw-bold fs-4">
-          <NavLink
-            to="/"
-            className={({ isActive }) =>
-              `${linkClass} ${isActive ? "active-link" : ""}`
-            }
-          >
-            Build
-          </NavLink>
-          <NavLink
-            to="/design"
-            className={({ isActive }) =>
-              `${linkClass} ${isActive ? "active-link" : ""}`
-            }
-          >
-            Design
-          </NavLink>
-          <NavLink
-            to="/setting"
-            className={({ isActive }) =>
-              `${linkClass} ${isActive ? "active-link" : ""}`
-            }
-          >
-            Setting
-          </NavLink>
-          <NavLink
-            to="/share"
-            className={({ isActive }) =>
-              `${linkClass} ${isActive ? "active-link" : ""}`
-            }
-          >
-            Share
-          </NavLink>
-          <NavLink
-            to="/analyze"
-            className={({ isActive }) =>
-              `${linkClass} ${isActive ? "active-link" : ""}`
-            }
-          >
-            Analyze
-          </NavLink>
+            {/* Right: Buttons */}
+            <div className="ms-auto d-flex align-items-center gap-4">
+                <button
+                    onClick={onTest}
+                    className="btn  px-3 py-2 fs-5 fw-bold"
+                    style={{ border: "2px solid #db2777", color: "#db2777" }}
+                >
+                    Test this bot
+                </button>
+
+                <button
+                    onClick={onPublish}
+                    disabled={publishing}
+                    className="btn px-3 py-2 fs-5 fw-bold text-white"
+                    style={{
+                        backgroundColor: publishing ? "#6c757d" : "#db2777", // gray if disabled, pink if active
+                        borderColor: publishing ? "#6c757d" : "#db2777",
+                    }}
+                    aria-busy={publishing}
+                >
+                    {publishing ? (
+                        <span className="d-inline-flex align-items-center gap-2">
+                            <span
+                                className="spinner-border spinner-border-sm"
+                                role="status"
+                                aria-hidden="true"
+                            ></span>
+                            Publishing...
+                        </span>
+                    ) : (
+                        "Publish"
+                    )}
+                </button>
+            </div>
         </div>
-      </div>
-
-      {/* Right: Buttons */}
-      <div className="ms-auto d-flex align-items-center gap-4">
-        <button onClick={onTest} className="btn  px-3 py-2 fs-5 fw-bold"
-          style={{ border: "2px solid #db2777", color: "#db2777", }}
-        >
-          Test this bot
-        </button>
-
-        <button
-          onClick={onPublish}
-          disabled={publishing}
-          className="btn px-3 py-2 fs-5 fw-bold text-white"
-          style={{
-            backgroundColor: publishing ? "#6c757d" : "#db2777", // gray if disabled, pink if active
-            borderColor: publishing ? "#6c757d" : "#db2777",
-          }}
-          aria-busy={publishing}
-        >
-          {publishing ? (
-            <span className="d-inline-flex align-items-center gap-2">
-              <span
-                className="spinner-border spinner-border-sm"
-                role="status"
-                aria-hidden="true"
-              ></span>
-              Publishing...
-            </span>
-          ) : (
-            "Publish"
-          )}
-        </button>
-
-      </div>
-    </div>
-  );
+    );
 }

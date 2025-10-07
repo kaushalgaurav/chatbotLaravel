@@ -9,6 +9,11 @@
     <meta name="author" content="Themesbrand" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     {{-- Vite: inject correct built assets (CSS + JS) --}}
+    <script>
+        window.laravelData = {
+            chatbotUrl: "{{ url('chatbots/' . $encryptedId) }}", // example dynamic value
+        };
+    </script>
     @viteReactRefresh
     @vite('resources/js/landbot/main.jsx')
 

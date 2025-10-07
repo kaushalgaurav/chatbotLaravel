@@ -120,7 +120,7 @@ class ChatbotController extends Controller {
 
     public function buildChatbot($encryptedId) {
         $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
-        return view('chatbots.build_chatbot', compact('chatbot'));
+        return view('chatbots.build_chatbot', compact('chatbot', 'encryptedId'));
     }
 
     public function details($encryptedId) {
@@ -312,8 +312,7 @@ class ChatbotController extends Controller {
     /**
      * Generic analytics suitable for any bot
      */
-    protected function getAnalytics($conversations)
-    {
+    protected function getAnalytics($conversations) {
         $totalConversations = $conversations->count();
         $totalMessages = $conversations->sum(fn($msgs) => $msgs->count());
         $botMessages = $conversations->sum(fn($msgs) => $msgs->where('sender', 'bot')->count());
