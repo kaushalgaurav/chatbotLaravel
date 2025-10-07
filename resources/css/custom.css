@@ -362,6 +362,4 @@ body[data-sidebar="dark"].vertical-collpsed {
       background: #eee;
     }
 
-    .sidebar-workspace-right {
-  width: calc(100% - 250px);
-}
+  
