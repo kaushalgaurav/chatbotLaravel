@@ -74,30 +74,30 @@ export default function Topbar({ onTest, onPublish, publishing = false }) {
             {/* Center: Navigation */}
             <div className="position-absolute start-50 translate-middle-x">
                 <div className="d-flex gap-5 fw-bold fs-4">
-                    <NavLink
-                        to={`${window.laravelData.chatbotUrl}/build`}
+                    <a
+                        href={`${window.laravelData.chatbotUrl}/build`}
                         className={({ isActive }) =>
                             `${linkClass} ${isActive ? "active-link" : ""}`
                         }
                     >
                         Build
-                    </NavLink>
-                    <NavLink
-                        to={`${window.laravelData.chatbotUrl}/design`}
+                    </a>
+                    <a
+                        href={`${window.laravelData.chatbotUrl}/design`}
                         className={({ isActive }) =>
                             `${linkClass} ${isActive ? "active-link" : ""}`
                         }
                     >
                         Design
-                    </NavLink>
-                    <NavLink
-                        to={`${window.laravelData.chatbotUrl}/settings`}
+                    </a>
+                    <a
+                        href={`${window.laravelData.chatbotUrl}/settings`}
                         className={({ isActive }) =>
                             `${linkClass} ${isActive ? "active-link" : ""}`
                         }
                     >
                         Setting
-                    </NavLink>
+                    </a>
                     <NavLink
                         to={`${window.laravelData.chatbotUrl}/share`}
                         className={({ isActive }) =>
@@ -106,14 +106,14 @@ export default function Topbar({ onTest, onPublish, publishing = false }) {
                     >
                         Share
                     </NavLink>
-                    <NavLink
-                        to={`${window.laravelData.chatbotUrl}/analyze`}
+                    <a
+                        href={`${window.laravelData.chatbotUrl}/analyze`}
                         className={({ isActive }) =>
                             `${linkClass} ${isActive ? "active-link" : ""}`
                         }
                     >
                         Analyze
-                    </NavLink>
+                    </a>
                 </div>
             </div>
 
