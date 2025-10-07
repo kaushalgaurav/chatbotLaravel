@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\ChatbotRequest;
 use App\Models\Publication;
 use App\Models\PublicationHistory;
+use App\Models\Conversation;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Auth;
@@ -270,6 +271,60 @@ class ChatbotController extends Controller {
 
     public function analyzeChatbot($encryptedId) {
         $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
-        return view('chatbots.analyze', compact('chatbot'));
+        $chatbotId = $chatbot->id;
+        $publishedBot = Publication::where('chatbot_id', $chatbotId)->where('is_published', 1)->first();
+        if (!$publishedBot) {
+            return redirect()
+                ->route('chatbots.index')
+                ->with('error', 'Chatbot is not published yet. Please publish to analyze conversations.');
+        }
+        $botId = $publishedBot->bot_id;
+        // return view('chatbots.analyze', compact('chatbot'));
+        // Fetch all conversations for this bot, grouped by conversation_id
+        $conversations = Conversation::where('bot_id', $botId)
+            ->orderBy('conversation_id')
+            ->orderBy('created_at')
+            ->get()
+            ->groupBy('conversation_id');
+
+        // Prepare table data: bot messages as headers, user responses as rows
+        $tableData = [];
+        foreach ($conversations as $convId => $messages) {
+            $row = [];
+            foreach ($messages as $msg) {
+                if ($msg->sender === 'bot') {
+                    $currentBotMessage = $msg->message;
+                    if (!isset($tableData[$currentBotMessage])) {
+                        $tableData[$currentBotMessage] = [];
+                    }
+                } elseif ($msg->sender === 'user') {
+                    $tableData[$currentBotMessage][] = $msg->message;
+                }
+            }
+        }
+
+        // Generic analytics
+        $analytics = $this->getAnalytics($conversations);
+
+        return view('chatbots.analyze', compact('tableData', 'analytics'));
+    }
+
+    /**
+     * Generic analytics suitable for any bot
+     */
+    protected function getAnalytics($conversations)
+    {
+        $totalConversations = $conversations->count();
+        $totalMessages = $conversations->sum(fn($msgs) => $msgs->count());
+        $botMessages = $conversations->sum(fn($msgs) => $msgs->where('sender', 'bot')->count());
+        $userMessages = $conversations->sum(fn($msgs) => $msgs->where('sender', 'user')->count());
+
+        return [
+            'total_conversations' => $totalConversations,
+            'total_messages' => $totalMessages,
+            'bot_messages' => $botMessages,
+            'user_messages' => $userMessages,
+            'average_user_messages_per_conversation' => $totalConversations ? round($userMessages / $totalConversations, 2) : 0,
+        ];
     }
 }
