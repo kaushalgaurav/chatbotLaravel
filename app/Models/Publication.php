@@ -16,6 +16,6 @@ class Publication extends Model {
     ];
 
     public function histories() {
-        return $this->hasMany(ChatbotPublicationHistory::class, 'publication_id');
+        return $this->hasMany(PublicationHistory::class, 'publication_id');
     }
 }

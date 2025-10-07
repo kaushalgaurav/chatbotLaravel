@@ -121,7 +121,7 @@
                         </a>
                     </div>
                     <div class="col-lg-4 col-md-6">
-                        <a href="javascript: void(0);">
+                        <a href="javascript: void(0);" data-bs-toggle="modal" data-bs-target="#templateListModal">
                             <div class="start-building-card ">
                                 <div class="start-building-icon"><img src="{{ URL::asset('build/images/icons/template.png') }}" alt="template"></div>
                                 <h3 class="my-2 fs-20">Use a template</h3>
@@ -134,6 +134,21 @@
 
 
 
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="templateListModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="templateListLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fs-20" id="templateListLabel">Select a Template</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="template-list" class="row g-3">
+                        <!-- Template cards will be injected here -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -175,6 +190,92 @@
                     }
                 });
             });
+        });
+    </script>
+    <script>
+        $(document).ready(function() {
+
+            // Load templates when modal opens
+            $('#templateListModal').on('shown.bs.modal', function() {
+                loadTemplates();
+            });
+
+            function loadTemplates() {
+                let $container = $('#template-list');
+                $container.html('<div class="text-center py-4">Loading templates...</div>');
+
+                $.ajax({
+                    url: "{{ route('templates.index') }}", // your API route for templates
+                    method: "GET",
+                    success: function(data) {
+                        if (data.length === 0) {
+                            $container.html('<div class="text-center text-muted py-4">No templates found.</div>');
+                            return;
+                        }
+
+                        let html = '';
+                        $.each(data, function(index, tpl) {
+                            html += `
+                        <div class="col-md-4">
+                            <div class="card h-100 shadow-sm border-0 template-card">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">${tpl.title}</h5>
+                                    <p class="card-text text-muted text-truncate">${tpl.content}</p>
+                                    <button class="btn btn-primary btn-sm mt-2 use-template-btn" data-id="${tpl.id}">
+                                        Use Template
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                        });
+                        $container.html(html);
+                    },
+                    error: function() {
+                        $container.html('<div class="text-center text-danger py-4">Failed to load templates.</div>');
+                    }
+                });
+            }
+
+            // Handle Use Template click
+            $(document).on('click', '.use-template-btn', function() {
+                let templateId = $(this).data('id');
+                let $btn = $(this);
+
+                if (!templateId) {
+                    alert('No template selected!');
+                    return;
+                }
+
+                $btn.prop('disabled', true).text('Applying...');
+
+                $.ajax({
+                    url: "{{ route('templates.copy', ':id') }}".replace(':id', templateId),
+                    method: "POST",
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    data: {
+                        chatbot_id: templateId
+                    },
+                    success: function(response) {
+                        alert('Template applied successfully!');
+                        $('#templateListModal').modal('hide');
+                        location.reload(); // or redirect if needed
+                    },
+                    error: function(xhr) {
+                        let msg = 'Something went wrong!';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            msg = xhr.responseJSON.message;
+                        }
+                        alert(msg);
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false).text('Use Template');
+                    }
+                });
+            });
+
         });
     </script>
 @endsection

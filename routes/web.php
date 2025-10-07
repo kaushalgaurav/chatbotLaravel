@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\HomeController;
-
+use App\Http\Controllers\TemplateController;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,3 +54,9 @@ Route::view('/bot/preview/{id}/{any?}', 'chatbots.preview')->where('any', '.*');
 Route::post('/chatbot/publish', [ChatbotController::class, 'publish'])->name('chatbot.publish');
 Route::get('/chatbot/history/{bot_id}', [ChatbotController::class, 'history'])->name('chatbot.history');
 Route::get('/publish-chatbot/{bot_id}', [ChatbotController::class, 'getPublishedChatbot'])->name('publish.chatbot');
+
+Route::prefix('templates')->group(function () {
+    Route::get('/', [TemplateController::class, 'index'])->name('templates.index');
+    // Route::post('/', [TemplateController::class, 'store']);
+    Route::post('/{template}/copy', [TemplateController::class, 'copyToChatbot'])->name('templates.copy');
+});
