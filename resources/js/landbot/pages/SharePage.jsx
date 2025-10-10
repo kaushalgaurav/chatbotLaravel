@@ -17,17 +17,33 @@ const EMBED_TYPES = [
 /** Safe read latest published snapshot from localStorage */
 function readLatestPublished() {
   try {
-    const raw = localStorage.getItem(PUBLISH_KEY);
+    // get chatbotId from DOM (same as FlowApp)
+    const chatbotId = document.getElementById("root")?.dataset?.chatbotId ?? "";
+    const scopedKey = `${PUBLISH_KEY}:${chatbotId || "anon"}`;
+    let raw = localStorage.getItem(scopedKey);
+
+    // fallback to global key if scoped not found
+    if (!raw) raw = localStorage.getItem(PUBLISH_KEY);
     if (!raw) return null;
+
     const parsed = JSON.parse(raw);
     const last = parsed?.versions?.length
       ? parsed.versions[parsed.versions.length - 1]
       : null;
-    return last ? { id: last.id, ts: last.ts, flow: last.flow } : null;
-  } catch {
+    if (!last) return null;
+
+    // support both old and new shapes
+    const id = last.bot_id || last.id;
+    const ts = last.date || last.ts || new Date().toISOString();
+    const flow = last.payload || last.flow || null;
+
+    return { id, ts, flow };
+  } catch (err) {
+    console.warn("readLatestPublished error", err);
     return null;
   }
 }
+
 
 /* ---------- Small presentational subcomponents (kept in-file for simplicity) ---------- */
 

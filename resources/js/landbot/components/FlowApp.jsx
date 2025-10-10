@@ -1,4 +1,3 @@
-// resources/js/landbot/components/FlowApp.jsx
 import React, { useCallback, useState, useRef, useEffect, useMemo } from "react";
 import { ReactFlow, Background, useReactFlow, useStore } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -10,8 +9,10 @@ import usePublish from "../hooks/usePublish";
 import AnimatedEdge from "../components/AnimatedEdge";
 
 const PUBLISH_KEY = "published-flow:v1";
+const BASE_URL = "http://127.0.0.1:8000";
 const PUBLISH_API = "http://127.0.0.1:8000/chatbot/publish";
-const AUTOSAVE_INTERVAL_MS = 10000; 
+const AUTOSAVE_INTERVAL_MS = 10000;
+const AUTOSAVE_ENABLED = true;
 
 export default function FlowApp() {
   // -----------------------
@@ -24,7 +25,6 @@ export default function FlowApp() {
   } = useFlowState(initialNodes, []);
 
   const [openChat, setOpenChat] = useState(false);
-  // popup now also stores sourceHandle (e.g. "arrow", "option-0", "fallback")
   const [popup, setPopup] = useState({ visible: false, x: 0, y: 0, sourceId: null, sourceHandle: null });
   const [undoSnapshot, setUndoSnapshot] = useState(null);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
@@ -33,13 +33,12 @@ export default function FlowApp() {
   const { zoomIn, zoomOut, fitView, toObject } = useReactFlow();
   const zoom = useStore(s => s.transform[2]);
   const edgeTypes = useMemo(() => ({ animated: AnimatedEdge }), []);
-  
 
   // -----------------------
   // Autosave control refs (NEW)
   // -----------------------
-  const pauseAutosaveUntilNodeAddRef = useRef(false); // when true, autosave is paused until new node added
-  const lastNodesCountRef = useRef(nodes.length || 0); // baseline to detect new node additions
+  const pauseAutosaveUntilNodeAddRef = useRef(false);
+  const lastNodesCountRef = useRef(nodes.length || 0);
 
   // -----------------------
   // Helpers
@@ -47,50 +46,50 @@ export default function FlowApp() {
   const loadFlowForBot = (chatbotId) => {
     const draftKey = `${PUBLISH_KEY}:${chatbotId}:draft`;
     const draft = localStorage.getItem(draftKey);
-
     if (draft) {
-      try {
-        return JSON.parse(draft);
-      } catch {}
+      try { return JSON.parse(draft); } catch { /* ignore */ }
     }
-
     const raw = localStorage.getItem(`${PUBLISH_KEY}:${String(chatbotId) || "anon"}`);
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
         const latest = parsed.versions?.slice(-1)[0];
         return latest?.payload ?? { nodes: [], edges: [] };
-      } catch {}
+      } catch { /* ignore */ }
     }
     return { nodes: initialNodes, edges: [] };
   };
 
-  const getFlowSnapshot = useCallback(() => {
-    try {
-      const flow = toObject();
-      return flow?.nodes || flow?.edges ? flow : { nodes, edges };
-    } catch {
-      return { nodes, edges };
-    }
-  }, [toObject, nodes, edges]);
+ const getFlowSnapshot = useCallback(() => {
+  try {
+    const rf = toObject();
+    // 🧠 Fallbacks: if edges missing, use local state or ReactFlow store directly
+    const currentNodes = rf?.nodes?.length ? rf.nodes : nodes;
+    const currentEdges =
+      (rf?.edges?.length ? rf.edges : edges) ||
+      useStore.getState?.()?.edges ||
+      [];
+
+    return { nodes: currentNodes, edges: currentEdges };
+  } catch (e) {
+    console.warn("[FlowApp] getFlowSnapshot fallback", e);
+    return { nodes, edges };
+  }
+}, [toObject, nodes, edges]);
 
   const { publishing, toast, publish, clearToast } = usePublish(getFlowSnapshot, {
     apiUrl: PUBLISH_API
   });
 
-  // -----------------------
-  // Autosave every 10s (to publish API) — saves draft with is_published: false (silent)
-  // Paused after manual publish until a new node is added
-  // -----------------------
+  // Autosave interval (unchanged)
   useEffect(() => {
-    if (!PUBLISH_API) return;
-
+    if (!PUBLISH_API || !AUTOSAVE_ENABLED) return;
     let mounted = true;
     const id = setInterval(() => {
       (async () => {
         if (!mounted) return;
         if (publishing) return;
-        if (pauseAutosaveUntilNodeAddRef.current) return; // PAUSED after manual publish until node add
+        if (pauseAutosaveUntilNodeAddRef.current) return;
         try {
           await publish({ is_published: false, skipValidation: true, silent: true });
         } catch (e) {
@@ -98,33 +97,22 @@ export default function FlowApp() {
         }
       })();
     }, AUTOSAVE_INTERVAL_MS);
-
-    return () => {
-      mounted = false;
-      clearInterval(id);
-    };
+    return () => { mounted = false; clearInterval(id); };
   }, [publish, publishing]);
 
-  // -----------------------
-  // Detect node additions and resume autosave if paused
-  // -----------------------
+  // Detect node additions to resume autosave
   useEffect(() => {
     const currentCount = nodes.length || 0;
-
-    // If autosave is paused waiting for node-add and a node is added -> resume
     if (pauseAutosaveUntilNodeAddRef.current && currentCount > (lastNodesCountRef.current || 0)) {
       pauseAutosaveUntilNodeAddRef.current = false;
       lastNodesCountRef.current = currentCount;
       console.info("Autosave resumed: new node detected.");
     } else {
-      // keep baseline up to date
       lastNodesCountRef.current = currentCount;
     }
   }, [nodes]);
 
-  // -----------------------
-  // Node / Edge handlers
-  // -----------------------
+  // Node/edge handlers (unchanged)
   const deleteNodeHandler = useCallback((nodeId) => {
     setNodes(nds => {
       const removed = nds.find(n => n.id === nodeId);
@@ -148,9 +136,9 @@ export default function FlowApp() {
   const getDefaultNodeData = useCallback((type, onAddClick) => {
     switch (type) {
       case "question": return { label: "Ask your question...", varName: "", onAddClick };
-      case "buttons": return { question: "Choose an option:", options: ["Option 1", "Option 2"],fallbackLabel: "Any of the above",  varName: "", onAddClick };
-      case "yesno":   return { question: "Yes or No?", yesLabel: "Yes", noLabel: "No", varName: "", onAddClick };
-      case "rating":  return { question: "Rate from 1 to 5", onAddClick };
+      case "buttons": return { question: "Choose an option:", options: ["Option 1", "Option 2"], fallbackLabel: "Any of the above", varName: "", onAddClick };
+      case "yesno": return { question: "Yes or No?", yesLabel: "Yes", noLabel: "No", varName: "", onAddClick };
+      case "rating": return { question: "Rate from 1 to 5", onAddClick };
       case "message": return { text: "Bot message...", onAddClick };
       case "condition": return {
         logicType: "condition",
@@ -165,34 +153,21 @@ export default function FlowApp() {
     }
   }, []);
 
-  // -----------------------
-  // handleAddClick: supports both (nodeId, event) and (nodeId, optIndex)
-  // - If passed an Event (has currentTarget) -> position popup next to element (old behavior)
-  // - If passed an index or "fallback" -> set popup.sourceHandle to option-<i> or "fallback" and show popup (positioned roughly center)
-  // -----------------------
   const handleAddClick = useCallback((nodeId, maybeEventOrIndex) => {
-    // If second arg looks like a DOM event forwarded from the Add button
     if (maybeEventOrIndex && maybeEventOrIndex.currentTarget) {
       try {
         const rect = maybeEventOrIndex.currentTarget.getBoundingClientRect();
         setPopup({ visible: true, x: rect.right + 8, y: rect.top, sourceId: nodeId, sourceHandle: "arrow" });
         return;
-      } catch (err) {
-        // fall through to generic handling if bounding rect fails
-      }
+      } catch (err) {}
     }
-
-    // Otherwise treat second arg as option index or "fallback"
     const optIndex = maybeEventOrIndex;
     const sourceHandle = optIndex === "fallback" ? "fallback" : (typeof optIndex !== "undefined" ? `option-${optIndex}` : "arrow");
-
-    // Position the popup near center as we don't have a DOM rect from the ButtonsNode
     const centerX = Math.round(window.innerWidth / 2);
     const centerY = Math.round(window.innerHeight / 2);
     setPopup({ visible: true, x: centerX, y: centerY, sourceId: nodeId, sourceHandle });
   }, []);
 
-  // inject onAddClick (and onDelete) into node data
   const nodesWithAdd = useMemo(() => nodes.map(n => ({
     ...n,
     data: { ...n.data, onAddClick: handleAddClick, onDelete: () => deleteNodeHandler(n.id) }
@@ -207,9 +182,6 @@ export default function FlowApp() {
     });
   }, [onConnect]);
 
-  // -----------------------
-  // When creating a new node via popup, use popup.sourceHandle as the edge's sourceHandle
-  // -----------------------
   const handleSelectType = useCallback((type) => {
     if (!popup.sourceId) return;
     const id = `${Date.now()}`;
@@ -218,17 +190,15 @@ export default function FlowApp() {
       position: { x: 400, y: 200 + nodes.length * 80 }
     };
     setNodes(nds => [...nds, newNode]);
-
     const sourceHandle = popup.sourceHandle || "arrow";
     setEdges(eds => [...eds, {
       id: `e${popup.sourceId}-${id}`,
       source: popup.sourceId,
-      sourceHandle,               // <-- important: uses option-<i> or fallback if set earlier
+      sourceHandle,
       target: id,
       targetHandle: "in",
       type: "animated"
     }]);
-
     setPopup({ visible: false, x: 0, y: 0, sourceId: null, sourceHandle: null });
   }, [popup.sourceId, popup.sourceHandle, nodes.length, getDefaultNodeData, handleAddClick, setNodes, setEdges]);
 
@@ -237,100 +207,211 @@ export default function FlowApp() {
   }, [setNodes]);
 
   // -----------------------
-  // Load + auto-save draft
-  // Minimal change: ensure a constant bot_id exists for this chatbot in localStorage
+  // Load + auto-save draft (server-first + bot_id sync)
   // -----------------------
-useEffect(() => {
-  const chatbotId = document.getElementById("root")?.dataset?.chatbotId ?? "";
-  if (!chatbotId) return;
+  useEffect(() => {
+    const chatbotId = document.getElementById("root")?.dataset?.chatbotId ?? "";
+    if (!chatbotId) return;
 
-  // --- existing flow load behavior (unchanged) ---
-  const flow = loadFlowForBot(chatbotId);
-  const loadedNodes = flow?.nodes?.length ? flow.nodes : initialNodes;
-
-  // backfill fallbackLabel in the loaded nodes before setting state
-  const patchedNodes = loadedNodes.map(n => {
-    if (n.type === "buttons") {
-      return {
-        ...n,
-        data: {
-          ...n.data,
-          fallbackLabel: n.data?.fallbackLabel ?? "Any of the above"
-        }
-      };
-    }
-    return n;
-  });
-
-  setNodes(patchedNodes);
-  setEdges(flow?.edges || []);
-
-  // --- NEW: ensure bot_id exists and reuse if previously saved in published versions ---
-  try {
+    // Respect botId from URL if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const botIdFromUrl = urlParams.get("botId");
     const botIdKey = `bot_id:${chatbotId}`;
-    let botId = localStorage.getItem(botIdKey);
 
-    if (!botId) {
-      // try to reuse bot_id from previously published metadata (if available)
-      const raw = localStorage.getItem(`${PUBLISH_KEY}:${String(chatbotId) || "anon"}`);
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          const latest = parsed.versions?.slice(-1)[0];
-          // prefer latest.bot_id, fallback to latest.id (older versions might have used id as bot_id)
-          botId = latest?.bot_id || latest?.id || null;
-        } catch {}
+    const applyFlow = (flow) => {
+      // Normalize backend / local flow shape
+      if (!flow) {
+        console.warn("[FlowApp] No flow to apply, loading defaults");
+        setNodes(initialNodes);
+        setEdges([]);
+        return;
       }
-    }
+      if (Array.isArray(flow)) flow = { nodes: flow, edges: [] };
+      if (flow.payload && !flow.nodes) flow = flow.payload;
+      if (Array.isArray(flow.payload)) flow = { nodes: flow.payload, edges: [] };
+      if (flow.flow && !flow.nodes) flow = flow.flow;
 
-    // generate and persist if still missing
-    if (!botId) {
-      botId = `v-${Date.now()}`;
-    }
-    localStorage.setItem(botIdKey, botId);
-  } catch (e) {
-    // ignore localStorage errors — do not change other logic
-    console.warn("Could not ensure bot_id in localStorage", e);
-  }
-}, [setNodes, setEdges]);
+      console.log("[FlowApp] ✅ Final normalized flow:", flow);
 
+      const loadedNodes = flow?.nodes?.length ? flow.nodes : initialNodes;
+      const patchedNodes = loadedNodes.map(n => {
+        if (n.type === "buttons") {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              fallbackLabel: n.data?.fallbackLabel ?? "Any of the above"
+            }
+          };
+        }
+        return n;
+      });
 
+      setNodes(patchedNodes);
+      setEdges(flow?.edges || []);
+    };
+
+    (async () => {
+      try {
+        // STEP A: Ensure canonical bot_id in localStorage:
+        // if botId is present in URL use it; otherwise try to get from server or existing localStorage
+        let botId = localStorage.getItem(botIdKey) || null;
+        if (botIdFromUrl && botIdFromUrl.startsWith("v-")) {
+          botId = botIdFromUrl;
+          localStorage.setItem(botIdKey, botId);
+          console.info("[FlowApp] Using botId from URL:", botId);
+        } else if (!botId) {
+          // Try fetching server-side to retrieve an existing bot_id (publish-chatbot returns data which may include bot_id)
+          try {
+            const metaRes = await fetch(`${BASE_URL}/publish-chatbot/${encodeURIComponent(chatbotId)}`, {
+              method: "GET",
+              headers: { Accept: "application/json" },
+              credentials: 'include'
+            });
+            if (metaRes.ok) {
+              const metaJson = await metaRes.clone().json().catch(() => null);
+              const backendBotId =
+                metaJson?.data?.bot_id ||
+                metaJson?.payload?.bot_id ||
+                metaJson?.bot_id ||
+                null;
+              if (backendBotId) {
+                botId = backendBotId;
+                localStorage.setItem(botIdKey, botId);
+                console.info("[FlowApp] Loaded existing botId from backend:", botId);
+              }
+            }
+          } catch (err) {
+            // ignore meta fetch errors, we'll try to load flow normally below
+            console.warn("[FlowApp] bot_id fetch attempt failed:", err);
+          }
+        } else {
+          console.info("[FlowApp] Loaded existing botId from localStorage:", botId);
+        }
+
+        // STEP B: Fetch flow from backend (server-first)
+        // First try the authenticated numeric endpoint (publish-chatbot/:chatbotId) — this can also include payload
+        try {
+          console.log("[FlowApp] Fetching flow from backend for chatbotId:", chatbotId);
+          const res = await fetch(`${BASE_URL}/publish-chatbot/${encodeURIComponent(chatbotId)}`, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            credentials: 'include'
+          });
+
+          if (res.ok) {
+            const json = await res.json().catch(() => null);
+            const flowFromServer =
+              json?.data?.payload?.flow ||
+              json?.data?.payload ||
+              json?.payload?.flow ||
+              json?.payload ||
+              json?.flow ||
+              json?.data ||
+              null;
+
+            // if server provided a bot_id here, persist it (keeps incognito in sync)
+            const maybeBotId =
+              json?.data?.bot_id ||
+              json?.payload?.bot_id ||
+              json?.bot_id ||
+              null;
+            if (maybeBotId) {
+              localStorage.setItem(botIdKey, maybeBotId);
+              console.info("[FlowApp] Persisted backend bot_id:", maybeBotId);
+            }
+
+            if (flowFromServer) {
+              console.log("[FlowApp] ✅ Loaded flow from backend");
+              applyFlow(flowFromServer);
+              try { localStorage.setItem(`${PUBLISH_KEY}:${chatbotId}:draft`, JSON.stringify(flowFromServer)); } catch (e) {}
+              return;
+            } else {
+              console.info("[FlowApp] Backend responded OK but no flow payload");
+            }
+          } else {
+            console.info("[FlowApp] publish-chatbot status:", res.status);
+          }
+        } catch (err) {
+          console.warn('[FlowApp] Could not fetch published flow from server', err);
+        }
+
+        // If we have a canonical botId (from URL or persisted), try public published/:botId endpoint
+        const persistedBotId = localStorage.getItem(botIdKey);
+        if (persistedBotId) {
+          try {
+            const pubRes = await fetch(`${BASE_URL}/published/${encodeURIComponent(persistedBotId)}`, {
+              method: "GET",
+              headers: { Accept: "application/json" }
+            });
+            if (pubRes.ok) {
+              const pubJson = await pubRes.json().catch(() => null);
+              const flowFromPub = pubJson?.payload?.flow || pubJson?.payload || pubJson?.flow || pubJson || null;
+              if (flowFromPub) {
+                console.info("[FlowApp] ✅ Loaded flow from published/:botId");
+                applyFlow(flowFromPub);
+                try { localStorage.setItem(`${PUBLISH_KEY}:${chatbotId}:draft`, JSON.stringify(flowFromPub)); } catch (e) {}
+                return;
+              }
+            } else {
+              console.info("[FlowApp] published/:botId status:", pubRes.status);
+            }
+          } catch (err) {
+            console.warn("[FlowApp] fetching published/:botId failed:", err);
+          }
+        }
+
+        // STEP C: fallback to local draft
+        try {
+          const draftKey = `${PUBLISH_KEY}:${chatbotId}:draft`;
+          const draftRaw = localStorage.getItem(draftKey);
+          if (draftRaw) {
+            console.log("[FlowApp] Loaded flow from localStorage draft");
+            applyFlow(JSON.parse(draftRaw));
+            return;
+          }
+        } catch (err) {
+          console.warn("[FlowApp] Local draft load failed:", err);
+        }
+
+        // STEP D: initial nodes
+        console.log("[FlowApp] No flow found; using initialNodes");
+        applyFlow({ nodes: initialNodes, edges: [] });
+      } catch (err) {
+        console.warn("[FlowApp] Unexpected error in flow load:", err);
+        applyFlow({ nodes: initialNodes, edges: [] });
+      }
+    })();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setNodes, setEdges]);
+
+  // Persist draft whenever nodes/edges change
   useEffect(() => {
     const chatbotId = document.getElementById("root")?.dataset?.chatbotId ?? "";
     if (!chatbotId) return;
     const draftKey = `${PUBLISH_KEY}:${chatbotId}:draft`;
-    localStorage.setItem(draftKey, JSON.stringify({ nodes, edges }));
+    try { localStorage.setItem(draftKey, JSON.stringify({ nodes, edges })); } catch (err) { console.warn("[FlowApp] failed to persist draft:", err); }
   }, [nodes, edges]);
 
-  // -----------------------
-  // Manual publish handler (PAUSES autosave until new node added)
-  // -----------------------
-   // -----------------------
-  // Manual publish handler (PAUSES autosave until new node added)
-  // Also track manualPublishing to avoid showing publish spinner for autosave
-  // -----------------------
+  // Manual publish handler
   const handlePublish = useCallback(async () => {
     try {
-      setManualPublishing(true); // start manual spinner
+      setManualPublishing(true);
       const res = await publish({ is_published: true, skipValidation: false });
-      // res.ok true means publish succeeded according to usePublish
       if (res && res.ok) {
-        // pause autosave until user adds a new node
         pauseAutosaveUntilNodeAddRef.current = true;
-        // set baseline node count
         lastNodesCountRef.current = nodes.length || 0;
         console.info("Publish succeeded — autosave paused until a new node is added.");
       } else {
-        // optional: handle non-ok result (toast already shown by usePublish)
         console.warn("Publish returned non-ok result", res);
       }
     } catch (err) {
       console.error("Publish error", err);
     } finally {
-      setManualPublishing(false); // stop manual spinner
+      setManualPublishing(false);
     }
   }, [publish, nodes.length]);
-
 
   // -----------------------
   // Render
@@ -346,20 +427,20 @@ useEffect(() => {
           onConnect={handleConnect} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
           proOptions={{ hideAttribution: true }}
           onNodeDoubleClick={(_, node) => setSelectedNodeId(node.id)}
-          fitView style={{ backgroundColor: "#454B6B" }} 
-          maxZoom={1}  
+          fitView style={{ backgroundColor: "#454B6B" }}
+          maxZoom={1}
         >
           <Background gap={50} color="rgba(255,255,255,0.1)" variant="lines" />
         </ReactFlow>
 
         <Toolbar zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onFitView={fitView}
-                 onUndo={() => undoDelete()} onRedo={() => alert("Redo placeholder")} />
+          onUndo={() => undoDelete()} onRedo={() => alert("Redo placeholder")} />
 
         {popup.visible && <PopupMenu x={popup.x} y={popup.y} onSelect={handleSelectType} onClose={() => setPopup({ visible: false, x: 0, y: 0, sourceId: null, sourceHandle: null })} />}
         {selectedNode && <NodeInspector node={selectedNode} onClose={() => setSelectedNodeId(null)} updateNode={updateNode} />}
         {openChat && (
           <div className="position-fixed top-0 end-0 h-100 bg-white shadow"
-               style={{ width: "24rem", zIndex: 1050, marginTop: "56px" }}>
+            style={{ width: "24rem", zIndex: 1050, marginTop: "56px" }}>
             <Chatbot nodes={nodes} edges={edges} onClose={() => setOpenChat(false)} />
           </div>
         )}
