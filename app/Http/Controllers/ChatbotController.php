@@ -230,10 +230,10 @@ class ChatbotController extends Controller {
         ]);
     }
 
-    public function getPublishedChatbot($bot_id) {
+    public function getPublishedChatbot($chatbot_id) {
         // Find publication by bot_id
-        $publication = Publication::where('bot_id', $bot_id)->first();
-
+        $publication = Publication::where('chatbot_id', $chatbot_id)->first();
+        // dd($publication);
         if (!$publication) {
             return response()->json([
                 'success' => false,

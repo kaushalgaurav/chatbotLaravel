@@ -127,9 +127,25 @@ export default function usePublish(getFlowSnapshot, options = {}) {
           user_id: String(userId),
           chatbot_id: String(chatbotId),
           is_published: Number(!!is_published),
-          payload: flow,
-          json: nodesArray,
+          payload: {
+            ...flow,
+            bot_id: botId,
+          },
+          json: flow,
         };
+
+//         console.groupCollapsed("[usePublish] API Payload Debug");
+// console.log("📦 apiUrl:", apiUrl);
+// console.log("🧠 chatbotId:", chatbotId);
+// console.log("🧠 botId:", botId);
+// console.log("🧠 userId:", userId);
+// console.log("🧩 Payload nodes count:", flow?.nodes?.length || 0);
+// console.log("🧩 Payload edges count:", flow?.edges?.length || 0);
+// console.log("🧩 Sample node:", flow?.nodes?.[0]);
+// console.log("🧩 Sample edge:", flow?.edges?.[0]);
+// console.log("🔹 Full payload (to be sent):", apiPayload);
+// console.groupEnd();
+
 
         const res = await sendToApi(apiPayload);
         if (!res.ok) {
