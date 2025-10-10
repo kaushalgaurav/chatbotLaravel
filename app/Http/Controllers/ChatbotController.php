@@ -270,17 +270,15 @@ class ChatbotController extends Controller {
     }
 
     public function analyzeChatbot($encryptedId) {
-        dd('analyzeChatbot');
+        // dd('analyzeChatbot');
         $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
         $chatbotId = $chatbot->id;
         $publishedBot = Publication::where('chatbot_id', $chatbotId)->where('is_published', 1)->first();
-        // if (!$publishedBot) {
-        //     return redirect()
-        //         ->route('chatbots.index')
-        //         ->with('error', 'Chatbot is not published yet. Please publish to analyze conversations.');
-        // }
+        if (!$publishedBot) {
+            return redirect()->back()->with('error', 'No published version found for this chatbot.');
+        }
         $botId = $publishedBot->bot_id;
-        // return view('chatbots.analyze', compact('chatbot'));
+
         // Fetch all conversations for this bot, grouped by conversation_id
         $conversations = Conversation::where('bot_id', $botId)
             ->orderBy('conversation_id')
@@ -290,6 +288,7 @@ class ChatbotController extends Controller {
 
         // Prepare table data: bot messages as headers, user responses as rows
         $tableData = [];
+        $currentBotMessage = [];
         foreach ($conversations as $convId => $messages) {
             $row = [];
             foreach ($messages as $msg) {

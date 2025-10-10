@@ -15,5 +15,6 @@ class DatabaseSeeder extends Seeder {
         // \App\Models\User::factory(10)->create();
         // $this->call(CustomersSeeder::class);
         $this->call(ChatbotSeeder::class);
+        $this->call(TemplateSeeder::class);
     }
 }

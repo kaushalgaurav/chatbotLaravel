@@ -20,7 +20,7 @@
             <div class="section-header">
                 <h3>Team Members</h3>
                 <div class="item-list">
-                    <i class="mdi mdi-account-multiple-outline"></i> Nadeem
+                    <i class="mdi mdi-account-multiple-outline"></i> {{ Auth::user()->name }}
                 </div>
                 <button class="add-btn">Add Team Member</button>
             </div>
