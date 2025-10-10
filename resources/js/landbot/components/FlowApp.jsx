@@ -77,24 +77,6 @@ export default function FlowApp() {
   }
 }, [toObject, nodes, edges]);
 
-// call this to send to backend (isPublished = 0 for draft, 1 for publish)
-const sendViaPublish = async (isPublished = false) => {
-  try {
-    const res = await publish({ is_published: isPublished ? 1 : 0, skipValidation: false, silent: false });
-    if (res && res.ok) {
-      console.log("✅ publish() succeeded", res);
-    } else {
-      console.warn("⚠ publish() returned:", res);
-    }
-  } catch (err) {
-    console.error("Publish() error:", err);
-  }
-};
-
-// example usage: sendViaPublish(false); // save draft
-// sendViaPublish(true); // publish
-
-
   const { publishing, toast, publish, clearToast } = usePublish(getFlowSnapshot, {
     apiUrl: PUBLISH_API
   });
