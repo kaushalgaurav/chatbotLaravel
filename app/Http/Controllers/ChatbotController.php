@@ -39,7 +39,7 @@ class ChatbotController extends Controller {
      * Store a newly created resource in storage.
      */
     public function store(ChatbotRequest $request) {
-
+        // dd($request->all());
         $chatbot = Chatbot::create($request->all());
 
         // Redirect back to index page with success message

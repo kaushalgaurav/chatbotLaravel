@@ -1134,16 +1134,16 @@
         },
         {
             "name": "laravel/framework",
-            "version": "v12.32.5",
+            "version": "v12.33.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "77b2740391cd2a825ba59d6fada45e9b8b9bcc5a"
+                "reference": "124efc5f09d4668a4dc13f94a1018c524a58bcb1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/77b2740391cd2a825ba59d6fada45e9b8b9bcc5a",
-                "reference": "77b2740391cd2a825ba59d6fada45e9b8b9bcc5a",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/124efc5f09d4668a4dc13f94a1018c524a58bcb1",
+                "reference": "124efc5f09d4668a4dc13f94a1018c524a58bcb1",
                 "shasum": ""
             },
             "require": {
@@ -1349,7 +1349,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2025-09-30T17:39:22+00:00"
+            "time": "2025-10-07T14:30:39+00:00"
         },
         {
             "name": "laravel/prompts",
@@ -7365,16 +7365,16 @@
         },
         {
             "name": "yajra/laravel-datatables-html",
-            "version": "v12.4.0",
+            "version": "v12.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/yajra/laravel-datatables-html.git",
-                "reference": "381db640d1085d7398a6f4df25ea3da33952651b"
+                "reference": "056e75baf3e787dd4a82f5b66439620010266e5a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/yajra/laravel-datatables-html/zipball/381db640d1085d7398a6f4df25ea3da33952651b",
-                "reference": "381db640d1085d7398a6f4df25ea3da33952651b",
+                "url": "https://api.github.com/repos/yajra/laravel-datatables-html/zipball/056e75baf3e787dd4a82f5b66439620010266e5a",
+                "reference": "056e75baf3e787dd4a82f5b66439620010266e5a",
                 "shasum": ""
             },
             "require": {
@@ -7429,7 +7429,7 @@
             ],
             "support": {
                 "issues": "https://github.com/yajra/laravel-datatables-html/issues",
-                "source": "https://github.com/yajra/laravel-datatables-html/tree/v12.4.0"
+                "source": "https://github.com/yajra/laravel-datatables-html/tree/v12.5.0"
             },
             "funding": [
                 {
@@ -7445,20 +7445,20 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2025-10-07T04:36:20+00:00"
+            "time": "2025-10-07T09:21:27+00:00"
         },
         {
             "name": "yajra/laravel-datatables-oracle",
-            "version": "v12.5.1",
+            "version": "v12.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/yajra/laravel-datatables.git",
-                "reference": "3fc34e8c5b2c2c700f46a2ae2644c2be1c20c8da"
+                "reference": "604b957de3776182bde1b7390018cffc3f6b947c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/yajra/laravel-datatables/zipball/3fc34e8c5b2c2c700f46a2ae2644c2be1c20c8da",
-                "reference": "3fc34e8c5b2c2c700f46a2ae2644c2be1c20c8da",
+                "url": "https://api.github.com/repos/yajra/laravel-datatables/zipball/604b957de3776182bde1b7390018cffc3f6b947c",
+                "reference": "604b957de3776182bde1b7390018cffc3f6b947c",
                 "shasum": ""
             },
             "require": {
@@ -7526,7 +7526,7 @@
             ],
             "support": {
                 "issues": "https://github.com/yajra/laravel-datatables/issues",
-                "source": "https://github.com/yajra/laravel-datatables/tree/v12.5.1"
+                "source": "https://github.com/yajra/laravel-datatables/tree/v12.6.0"
             },
             "funding": [
                 {
@@ -7534,7 +7534,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-10-02T06:57:54+00:00"
+            "time": "2025-10-08T02:30:51+00:00"
         }
     ],
     "packages-dev": [

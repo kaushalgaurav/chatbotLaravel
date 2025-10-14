@@ -25,17 +25,17 @@
                 <h5 class="mb-3 fs-22">Create a bot for</h5>
             </div>
             <div class="create-card-body d-flex gap-3">
-                <div class="create-card-item" data-bs-toggle="modal" data-bs-target="#addchatbot">
+                <div class="create-card-item" data-bs-toggle="modal" data-bs-target="#addchatbot" data-type="1">
                     <div class="create-card-icon btn-primary">
                         <img src="{{ URL::asset('build/images/icons/responsive.png') }}" alt="">
                     </div>
-                    <h6 class="mb-0 fs-16">Web</h6>
+                    <h6 class="mb-0 fs-16">Web(Rule Based)</h6>
                 </div>
-                <div class="create-card-item ">
+                <div class="create-card-item" data-bs-toggle="modal" data-bs-target="#addchatbot" data-type="2">
                     <div class="create-card-icon btn-warning">
                         <img src="{{ URL::asset('build/images/icons/ApiChatbot.png') }}" alt="">
                     </div>
-                    <h6 class="mb-0 fs-16">ApiChatbot</h6>
+                    <h6 class="mb-0 fs-16">Small MSME</h6>
                 </div>
             </div>
         </div>
@@ -101,6 +101,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <h5 class="modal-title fs-30 text-center mb-5">Start building!</h5>
+                <!-- Hidden input to store selected bot type -->
+                <input type="hidden" id="botType" value="">
                 <div class="row align-items-center justify-content-center">
                     <div class="col-lg-4 col-md-6">
                         <a href="javascript: void(0);">
@@ -129,14 +131,11 @@
                             </div>
                         </a>
                     </div>
-
                 </div>
-
-
-
             </div>
         </div>
     </div>
+
     <div class="modal fade" id="templateListModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="templateListLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
@@ -156,7 +155,7 @@
 @section('script')
     <!-- dashboard init -->
     <script src="{{ URL::asset('build/js/pages/dashboard.init.js') }}"></script>
-    <script>
+    <!-- <script>
         $(document).ready(function() {
             $('.start-from-scratch').on('click', function(e) {
                 e.preventDefault();
@@ -191,7 +190,62 @@
                 });
             });
         });
-    </script>
+    </script> -->
+    <script>
+$(document).ready(function() {
+
+    // Store selected bot type when modal opens
+    let selectedBotType = null;
+
+    // Detect which card was clicked (Web or MSME)
+    $('.create-card-item').on('click', function() {
+        selectedBotType = $(this).data('type'); // 1 = Web, 2 = MSME
+        console.log('Selected bot type:', selectedBotType);
+    });
+
+    // Handle 'Start from scratch' click inside modal
+    $('.start-from-scratch').on('click', function(e) {
+        e.preventDefault();
+
+        if (!selectedBotType) {
+            alert('Please select a bot type first!');
+            return;
+        }
+
+        let requestData = {
+            name: selectedBotType == 1 ? 'My Web Bot' : 'My Store Bot',        // required field
+            description: selectedBotType == 1 ? 'This is a new web bot' : 'This is a new store bot',
+            platform: selectedBotType,
+            language: 'en',
+            is_active: true,
+        };
+
+        $.ajax({
+            url: '/chatbots/store',
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            contentType: 'application/json',
+            dataType: 'json',
+            data: JSON.stringify(requestData),
+            success: function(data) {
+                if (data.success) {
+                    // redirect to chatbot build page
+                    window.location.href = '/chatbots/' + data.bot_id + '/build';
+                } else {
+                    alert('Error creating chatbot');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error(error);
+                alert('Something went wrong!');
+            }
+        });
+    });
+});
+</script>
+
     <script>
         $(document).ready(function() {
 

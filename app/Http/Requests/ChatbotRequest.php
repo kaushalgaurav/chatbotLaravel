@@ -32,7 +32,7 @@ class ChatbotRequest extends FormRequest {
     public function rules(): array {
         $rules = [
             'description' => 'nullable|string|max:255',
-            'platform' => 'nullable|string|max:50',
+            'platform' => 'nullable|integer|max:2',
             'language' => 'nullable|string|max:10',
             'is_active' => 'boolean',
             'user_id' => 'required|integer|exists:users,id', // added rule
