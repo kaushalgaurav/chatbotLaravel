@@ -21,9 +21,9 @@ export const nodeTypes = {
   yesno: withHandles(YesNoNode),
   rating: withHandles(RatingNode),
   message: withHandles(MessageNode),
-  condition: withHandles(ConditionNode),
-  formula: withHandles(FormulaNode),
-  logic: withHandles(LogicNode),
+  // condition: withHandles(ConditionNode),
+  // formula: withHandles(FormulaNode),
+  // logic: withHandles(LogicNode),
 };
 
 export const initialNodes = [

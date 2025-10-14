@@ -8,8 +8,8 @@ export default function PopupMenu({ x = 0, y = 0, onSelect, onClose }) {
     { type: "buttons", label: "🔘 Buttons" },
     { type: "yesno", label: "✅ Yes / ❌ No" },
     { type: "rating", label: "⭐ Rating" },
-    { type: "condition", label: "⚖️ Condition" },
-    { type: "formula", label: "📐 Formula" },
+    // { type: "condition", label: "⚖️ Condition" },
+    // { type: "formula", label: "📐 Formula" },
   ];
 
   return (

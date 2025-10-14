@@ -14,6 +14,36 @@ const PUBLISH_API = "http://127.0.0.1:8000/chatbot/publish";
 const AUTOSAVE_INTERVAL_MS = 10000;
 const AUTOSAVE_ENABLED = true;
 
+/* ----------------- New: constants & helpers ----------------- */
+const DEBOUNCE_BEFORE_START_MS = 1200; // group rapid edits
+const ATTEMPT_INTERVAL_MS = AUTOSAVE_INTERVAL_MS || 10000;
+const IGNORE_POSITION = false; // set true to ignore position-only moves from counting as a change
+
+// canonicalize flow for reliable comparison
+function canonicalizeFlow({ nodes = [], edges = [] }, { ignorePosition = false } = {}) {
+  const normalizeNode = (n) => {
+    const d = n.data && typeof n.data === "object" ? JSON.parse(JSON.stringify(n.data)) : n.data;
+    const base = { id: String(n.id), type: n.type || null, data: d ?? null };
+    if (!ignorePosition) base.position = { x: Math.round(n.position?.x || 0), y: Math.round(n.position?.y || 0) };
+    return base;
+  };
+  const normalizeEdge = (e) => ({
+    id: String(e.id),
+    source: String(e.source),
+    sourceHandle: e.sourceHandle ?? null,
+    target: String(e.target),
+    targetHandle: e.targetHandle ?? null,
+    type: e.type ?? null,
+  });
+  const normNodes = (nodes || []).map(normalizeNode).sort((a, b) => a.id.localeCompare(b.id));
+  const normEdges = (edges || []).map(normalizeEdge).sort((a, b) => a.id.localeCompare(b.id));
+  return { nodes: normNodes, edges: normEdges };
+}
+function flowsEqual(a, b) {
+  try { return JSON.stringify(a) === JSON.stringify(b); } catch { return false; }
+}
+
+/* ----------------- Component ----------------- */
 export default function FlowApp() {
   // -----------------------
   // Flow state
@@ -35,10 +65,18 @@ export default function FlowApp() {
   const edgeTypes = useMemo(() => ({ animated: AnimatedEdge }), []);
 
   // -----------------------
-  // Autosave control refs (NEW)
+  // Autosave / publish control refs & state (NEW)
   // -----------------------
   const pauseAutosaveUntilNodeAddRef = useRef(false);
   const lastNodesCountRef = useRef(nodes.length || 0);
+
+  // publish-on-change control
+  const [dirty, setDirty] = useState(false);
+  const lastPublishedRef = useRef(canonicalizeFlow({ nodes, edges }, { ignorePosition: IGNORE_POSITION }));
+  const startDebounceRef = useRef(null);
+  const intervalRef = useRef(null);
+  const isTryingRef = useRef(false); // prevent multiple loop starters
+  const currentPublishPromiseRef = useRef(null);
 
   // -----------------------
   // Helpers
@@ -60,47 +98,103 @@ export default function FlowApp() {
     return { nodes: initialNodes, edges: [] };
   };
 
- const getFlowSnapshot = useCallback(() => {
-  try {
-    const rf = toObject();
-    // 🧠 Fallbacks: if edges missing, use local state or ReactFlow store directly
-    const currentNodes = rf?.nodes?.length ? rf.nodes : nodes;
-    const currentEdges =
-      (rf?.edges?.length ? rf.edges : edges) ||
-      useStore.getState?.()?.edges ||
-      [];
+  const getFlowSnapshot = useCallback(() => {
+    try {
+      const rf = toObject();
+      // Fallbacks: if edges missing, use local state or ReactFlow store directly
+      const currentNodes = rf?.nodes?.length ? rf.nodes : nodes;
+      const currentEdges =
+        (rf?.edges?.length ? rf.edges : edges) ||
+        useStore.getState?.()?.edges ||
+        [];
 
-    return { nodes: currentNodes, edges: currentEdges };
-  } catch (e) {
-    console.warn("[FlowApp] getFlowSnapshot fallback", e);
-    return { nodes, edges };
-  }
-}, [toObject, nodes, edges]);
+      return { nodes: currentNodes, edges: currentEdges };
+    } catch (e) {
+      console.warn("[FlowApp] getFlowSnapshot fallback", e);
+      return { nodes, edges };
+    }
+  }, [toObject, nodes, edges]);
 
   const { publishing, toast, publish, clearToast } = usePublish(getFlowSnapshot, {
     apiUrl: PUBLISH_API
   });
 
-  // Autosave interval (unchanged)
-  useEffect(() => {
-    if (!PUBLISH_API || !AUTOSAVE_ENABLED) return;
-    let mounted = true;
-    const id = setInterval(() => {
-      (async () => {
-        if (!mounted) return;
-        if (publishing) return;
-        if (pauseAutosaveUntilNodeAddRef.current) return;
-        try {
-          await publish({ is_published: false, skipValidation: true, silent: true });
-        } catch (e) {
-          console.error("Autosave publish error", e);
-        }
-      })();
-    }, AUTOSAVE_INTERVAL_MS);
-    return () => { mounted = false; clearInterval(id); };
-  }, [publish, publishing]);
+  /* ----------------- New: publish loop control ----------------- */
 
-  // Detect node additions to resume autosave
+  // Single publish attempt; returns usePublish result
+  const publishAttempt = useCallback(async (opts = { is_published: false, skipValidation: true, silent: true }) => {
+    // canonicalize current snapshot
+    const snap = canonicalizeFlow(getFlowSnapshot(), { ignorePosition: IGNORE_POSITION });
+
+    // If equal to last published, stop loop and clear dirty
+    if (flowsEqual(snap, lastPublishedRef.current)) {
+      setDirty(false);
+      stopPublishLoop();
+      return { ok: true, skipped: true };
+    }
+
+    // Avoid overlapping attempts: if a publish is in-flight, return its promise
+    if (currentPublishPromiseRef.current) return currentPublishPromiseRef.current;
+
+    const p = (async () => {
+      try {
+        const res = await publish(opts);
+        if (res && res.ok) {
+          lastPublishedRef.current = snap;
+          setDirty(false);
+          stopPublishLoop();
+          return { ok: true, res };
+        } else {
+          // keep retrying
+          return { ok: false, res };
+        }
+      } catch (err) {
+        return { ok: false, error: err };
+      } finally {
+        currentPublishPromiseRef.current = null;
+      }
+    })();
+
+    currentPublishPromiseRef.current = p;
+    return p;
+  }, [publish, getFlowSnapshot]);
+
+  function stopPublishLoop() {
+    if (startDebounceRef.current) {
+      clearTimeout(startDebounceRef.current);
+      startDebounceRef.current = null;
+    }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    isTryingRef.current = false;
+    // cancel any in-flight publish promise is not natively abortable here; we rely on publish logic
+  }
+
+  function startPublishLoop() {
+    if (isTryingRef.current) return;
+    isTryingRef.current = true;
+
+    // debounce initial grouping
+    startDebounceRef.current = setTimeout(async () => {
+      startDebounceRef.current = null;
+      // initial immediate attempt
+      await publishAttempt({ is_published: false, skipValidation: true, silent: true }).catch(() => { });
+      // schedule periodic attempts if not stopped by success
+      if (!intervalRef.current) {
+        intervalRef.current = setInterval(() => {
+          publishAttempt({ is_published: false, skipValidation: true, silent: true }).catch(() => { });
+        }, ATTEMPT_INTERVAL_MS);
+      }
+    }, DEBOUNCE_BEFORE_START_MS);
+  }
+
+  /* ----------------- End publish loop control ----------------- */
+
+  // Autosave interval removed. The new startPublishLoop() triggers attempts only after changes.
+
+  // Detect node additions to resume autosave (existing behavior) — keep unchanged
   useEffect(() => {
     const currentCount = nodes.length || 0;
     if (pauseAutosaveUntilNodeAddRef.current && currentCount > (lastNodesCountRef.current || 0)) {
@@ -112,7 +206,7 @@ export default function FlowApp() {
     }
   }, [nodes]);
 
-  // Node/edge handlers (unchanged)
+  // Node/edge handlers (we'll wrap useFlowState handlers to mark dirty)
   const deleteNodeHandler = useCallback((nodeId) => {
     setNodes(nds => {
       const removed = nds.find(n => n.id === nodeId);
@@ -123,6 +217,10 @@ export default function FlowApp() {
       return nds.filter(n => n.id !== nodeId);
     });
     setEdges(eds => eds.filter(e => e.source !== nodeId && e.target !== nodeId));
+
+    // mark dirty and start publish loop
+    setDirty(true);
+    startPublishLoop();
   }, [edges, setEdges, setNodes]);
 
   const undoDelete = useCallback(() => {
@@ -131,6 +229,9 @@ export default function FlowApp() {
     if (node) setNodes(nds => [...nds, node]);
     if (removedEdges?.length) setEdges(eds => [...eds, ...removedEdges]);
     setUndoSnapshot(null);
+
+    setDirty(true);
+    startPublishLoop();
   }, [undoSnapshot, setNodes, setEdges]);
 
   const getDefaultNodeData = useCallback((type, onAddClick) => {
@@ -159,7 +260,7 @@ export default function FlowApp() {
         const rect = maybeEventOrIndex.currentTarget.getBoundingClientRect();
         setPopup({ visible: true, x: rect.right + 8, y: rect.top, sourceId: nodeId, sourceHandle: "arrow" });
         return;
-      } catch (err) {}
+      } catch (err) { }
     }
     const optIndex = maybeEventOrIndex;
     const sourceHandle = optIndex === "fallback" ? "fallback" : (typeof optIndex !== "undefined" ? `option-${optIndex}` : "arrow");
@@ -180,6 +281,9 @@ export default function FlowApp() {
       targetHandle: params.targetHandle || "in",
       type: params.type || "animated"
     });
+    // mark dirty and start loop
+    setDirty(true);
+    startPublishLoop();
   }, [onConnect]);
 
   const handleSelectType = useCallback((type) => {
@@ -200,10 +304,17 @@ export default function FlowApp() {
       type: "animated"
     }]);
     setPopup({ visible: false, x: 0, y: 0, sourceId: null, sourceHandle: null });
+
+    // mark dirty + start loop after programmatic add
+    setDirty(true);
+    startPublishLoop();
   }, [popup.sourceId, popup.sourceHandle, nodes.length, getDefaultNodeData, handleAddClick, setNodes, setEdges]);
 
   const updateNode = useCallback((newNode) => {
     setNodes(nds => nds.map(n => n.id === newNode.id ? newNode : n));
+    // mark dirty + start loop
+    setDirty(true);
+    startPublishLoop();
   }, [setNodes]);
 
   // -----------------------
@@ -231,7 +342,6 @@ export default function FlowApp() {
       if (Array.isArray(flow.payload)) flow = { nodes: flow.payload, edges: [] };
       if (flow.flow && !flow.nodes) flow = flow.flow;
 
-      console.log("[FlowApp] ✅ Final normalized flow:", flow);
 
       const loadedNodes = flow?.nodes?.length ? flow.nodes : initialNodes;
       const patchedNodes = loadedNodes.map(n => {
@@ -247,8 +357,15 @@ export default function FlowApp() {
         return n;
       });
 
+      // ✅ Filter out edges pointing to missing nodes
+      const validNodeIds = new Set(patchedNodes.map(n => String(n.id)));
+      const validEdges = (flow?.edges || []).filter(
+        (e) => validNodeIds.has(String(e.source)) && validNodeIds.has(String(e.target))
+      );
+
       setNodes(patchedNodes);
-      setEdges(flow?.edges || []);
+      setEdges(validEdges);
+
     };
 
     (async () => {
@@ -292,7 +409,6 @@ export default function FlowApp() {
         // STEP B: Fetch flow from backend (server-first)
         // First try the authenticated numeric endpoint (publish-chatbot/:chatbotId) — this can also include payload
         try {
-          console.log("[FlowApp] Fetching flow from backend for chatbotId:", chatbotId);
           const res = await fetch(`${BASE_URL}/publish-chatbot/${encodeURIComponent(chatbotId)}`, {
             method: 'GET',
             headers: { 'Accept': 'application/json' },
@@ -322,9 +438,8 @@ export default function FlowApp() {
             }
 
             if (flowFromServer) {
-              console.log("[FlowApp] ✅ Loaded flow from backend");
               applyFlow(flowFromServer);
-              try { localStorage.setItem(`${PUBLISH_KEY}:${chatbotId}:draft`, JSON.stringify(flowFromServer)); } catch (e) {}
+              try { localStorage.setItem(`${PUBLISH_KEY}:${chatbotId}:draft`, JSON.stringify(flowFromServer)); } catch (e) { }
               return;
             } else {
               console.info("[FlowApp] Backend responded OK but no flow payload");
@@ -350,7 +465,7 @@ export default function FlowApp() {
               if (flowFromPub) {
                 console.info("[FlowApp] ✅ Loaded flow from published/:botId");
                 applyFlow(flowFromPub);
-                try { localStorage.setItem(`${PUBLISH_KEY}:${chatbotId}:draft`, JSON.stringify(flowFromPub)); } catch (e) {}
+                try { localStorage.setItem(`${PUBLISH_KEY}:${chatbotId}:draft`, JSON.stringify(flowFromPub)); } catch (e) { }
                 return;
               }
             } else {
@@ -366,7 +481,6 @@ export default function FlowApp() {
           const draftKey = `${PUBLISH_KEY}:${chatbotId}:draft`;
           const draftRaw = localStorage.getItem(draftKey);
           if (draftRaw) {
-            console.log("[FlowApp] Loaded flow from localStorage draft");
             applyFlow(JSON.parse(draftRaw));
             return;
           }
@@ -375,7 +489,6 @@ export default function FlowApp() {
         }
 
         // STEP D: initial nodes
-        console.log("[FlowApp] No flow found; using initialNodes");
         applyFlow({ nodes: initialNodes, edges: [] });
       } catch (err) {
         console.warn("[FlowApp] Unexpected error in flow load:", err);
@@ -386,7 +499,7 @@ export default function FlowApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setNodes, setEdges]);
 
-  // Persist draft whenever nodes/edges change
+  // Persist draft whenever nodes/edges change (unchanged)
   useEffect(() => {
     const chatbotId = document.getElementById("root")?.dataset?.chatbotId ?? "";
     if (!chatbotId) return;
@@ -394,7 +507,7 @@ export default function FlowApp() {
     try { localStorage.setItem(draftKey, JSON.stringify({ nodes, edges })); } catch (err) { console.warn("[FlowApp] failed to persist draft:", err); }
   }, [nodes, edges]);
 
-  // Manual publish handler
+  // Manual publish handler (update lastPublishedRef on success)
   const handlePublish = useCallback(async () => {
     try {
       setManualPublishing(true);
@@ -402,6 +515,13 @@ export default function FlowApp() {
       if (res && res.ok) {
         pauseAutosaveUntilNodeAddRef.current = true;
         lastNodesCountRef.current = nodes.length || 0;
+
+        // update lastPublished snapshot and stop any running loop
+        try {
+          lastPublishedRef.current = canonicalizeFlow(getFlowSnapshot(), { ignorePosition: IGNORE_POSITION });
+        } catch (e) { /* ignore */ }
+        stopPublishLoop();
+
         console.info("Publish succeeded — autosave paused until a new node is added.");
       } else {
         console.warn("Publish returned non-ok result", res);
@@ -411,11 +531,63 @@ export default function FlowApp() {
     } finally {
       setManualPublishing(false);
     }
-  }, [publish, nodes.length]);
+  }, [publish, nodes.length, getFlowSnapshot]);
+
+  // -----------------------
+  // Wrap built-in change handlers so we only start publishing when meaningful changes occur
+  // -----------------------
+  const handleNodesChange = useCallback((changes) => {
+    onNodesChange(changes);
+
+    // changes are objects like { id, type: 'add'|'remove'|'position'|'select'|'update', ... }
+    const types = (changes || []).map(c => c?.type).filter(Boolean);
+    const meaningful = types.some(t => ['add', 'remove', 'update', 'reset'].includes(t));
+    const positionChange = types.includes('position');
+
+    if (meaningful || (positionChange && !IGNORE_POSITION)) {
+      setDirty(true);
+      startPublishLoop();
+    }
+  }, [onNodesChange]);
+
+  const handleEdgesChange = useCallback((changes) => {
+    onEdgesChange(changes);
+
+    const types = (changes || []).map(c => c?.type).filter(Boolean);
+    const meaningful = types.some(t => ['add', 'remove', 'update', 'reset'].includes(t));
+    if (meaningful) {
+      setDirty(true);
+      startPublishLoop();
+    }
+  }, [onEdgesChange]);
 
   // -----------------------
   // Render
   // -----------------------
+  // ------- DEBUG: expose flow for console inspection (temporary) -------
+  try {
+    // expose current flow arrays and a helper to get a fresh snapshot
+    window.__FLOW_DEBUG = {
+      nodes,
+      edges,
+      getSnapshot: () => {
+        try {
+          return getFlowSnapshot();
+        } catch (err) {
+          return { nodes, edges };
+        }
+      }
+    };
+    // quick summary in console
+    console.log("🧩 FLOW DEBUG:", {
+      nodesCount: nodes?.length ?? 0,
+      edgeCount: edges?.length ?? 0,
+      nodeTypes: (nodes || []).map(n => n.type)
+    });
+  } catch (err) {
+    // ignore in production, this is only for debugging
+  }
+
   return (
     <div className="h-screen flex flex-col">
       <Topbar onTest={() => setOpenChat(true)} onPublish={handlePublish} publishing={manualPublishing} />
@@ -423,7 +595,7 @@ export default function FlowApp() {
       <div style={{ width: "100%", height: "calc(100vh - 56px)" }}>
         <ReactFlow
           nodes={nodesWithAdd} edges={edges}
-          onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
+          onNodesChange={handleNodesChange} onEdgesChange={handleEdgesChange}
           onConnect={handleConnect} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
           proOptions={{ hideAttribution: true }}
           onNodeDoubleClick={(_, node) => setSelectedNodeId(node.id)}
