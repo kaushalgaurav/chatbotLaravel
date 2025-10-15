@@ -25,7 +25,7 @@
                         <table id="datatable" class="table table-bordered dt-responsive nowrap w-100">
                             <thead>
                                 <tr>
-                                    @foreach($tableData as $botMessage => $userResponses)
+                                    @foreach ($tableData as $botMessage => $userResponses)
                                         <th>{{ $botMessage }}</th>
                                     @endforeach
                                 </tr>
@@ -34,9 +34,9 @@
                                 @php
                                     $maxRows = max(array_map('count', $tableData));
                                 @endphp
-                                @for($i = 0; $i < $maxRows; $i++)
+                                @for ($i = 0; $i < $maxRows; $i++)
                                     <tr>
-                                        @foreach($tableData as $userResponses)
+                                        @foreach ($tableData as $userResponses)
                                             <td>{{ $userResponses[$i] ?? '' }}</td>
                                         @endforeach
                                     </tr>

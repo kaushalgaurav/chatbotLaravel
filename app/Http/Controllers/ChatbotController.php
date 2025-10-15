@@ -5,13 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\Chatbot;
 use Illuminate\Http\Request;
 use App\Http\Requests\ChatbotRequest;
+use App\Imports\ProductsImport;
 use App\Models\Publication;
 use App\Models\PublicationHistory;
 use App\Models\Conversation;
+use App\Models\File;
+use App\Models\Product;
+use App\Models\ProductJson;
+use App\Models\UploadJob;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\DB;
 
 class ChatbotController extends Controller {
     /**
@@ -326,4 +335,434 @@ class ChatbotController extends Controller {
             'average_user_messages_per_conversation' => $totalConversations ? round($userMessages / $totalConversations, 2) : 0,
         ];
     }
+
+    public function uploadProducts(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'files' => 'required|file|mimes:csv,xls,xlsx|max:102400', // 100MB
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $chatbot = Chatbot::create([
+            'user_id' => Auth::id(),
+            'name' => 'MSME Bot ' . time(),
+            'description' => 'Auto-generated bot for MSME product upload',
+            'platform' => '2',
+        ]);
+
+        $file = $request->file('files');
+        $originalName = $file->getClientOriginalName();
+        $ext = $file->getClientOriginalExtension();
+        $safeName = pathinfo($originalName, PATHINFO_FILENAME);
+        $storedName = $safeName . '_' . time() . '_' . Str::random(6) . '.' . $ext;
+        $storePath = "public/msme_uploads/{$chatbot->id}/";
+        $storedPath = $file->storeAs($storePath, $storedName);
+
+        // Save file record
+        $fileRecord = File::create([
+            'chatbot_id' => $chatbot->id,
+            'file_name' => $originalName,
+            'file_path' => $storedPath,
+            'file_type' => $ext,
+            'file_size' => $file->getSize(),
+        ]);
+
+        // Estimate rows
+        $totalRows = $this->estimateRowCount(storage_path('app/' . $storedPath), $ext);
+
+        // Create upload job
+        $uploadUuid = (string) Str::uuid();
+        $job = UploadJob::create([
+            'upload_uuid' => $uploadUuid,
+            'chatbot_id' => $chatbot->id,
+            'file_record_id' => $fileRecord->id,
+            'total_rows' => $totalRows,
+            'processed_rows' => 0,
+            'inserted' => 0,
+            'updated' => 0,
+            'status' => 'queued',
+        ]);
+
+        // Queue the import
+        $import = new ProductsImport($chatbot->id, $uploadUuid);
+        Excel::queueImport($import, $storedPath, 'local');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'File uploaded and import queued successfully.',
+            'upload_uuid' => $uploadUuid,
+            'job_id' => $job->id
+        ]);
+    }
+
+    /**
+     * Poll upload status
+     */
+    public function uploadStatus(string $uploadUuid) {
+        $job = UploadJob::where('upload_uuid', $uploadUuid)->first();
+
+        if (!$job) {
+            return response()->json(['success' => false, 'message' => 'Upload job not found.'], 404);
+        }
+
+        $snapshot = null;
+        if ($job->status === 'done') {
+            $json = \App\Models\ProductJson::where('chatbot_id', $job->chatbot_id)->first();
+            $snapshot = $json ? $json->products : null;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'status' => $job->status,
+                'total_rows' => $job->total_rows,
+                'processed_rows' => $job->processed_rows,
+                'inserted' => $job->inserted,
+                'updated' => $job->updated,
+                'snapshot' => $snapshot
+            ]
+        ]);
+    }
+
+    /**
+     * Estimate total rows
+     */
+    private function estimateRowCount(string $fullPath, string $ext): int {
+        try {
+            if ($ext === 'csv') {
+                $count = 0;
+                $f = fopen($fullPath, 'r');
+                while (!feof($f)) {
+                    $line = fgets($f);
+                    if ($line !== false) $count++;
+                }
+                fclose($f);
+                return max(0, $count - 1);
+            } else {
+                $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($fullPath);
+                $reader->setReadDataOnly(true);
+                $spreadsheet = $reader->load($fullPath);
+                $sheet = $spreadsheet->getActiveSheet();
+                return max(0, $sheet->getHighestDataRow() - 1);
+            }
+        } catch (\Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Download dummy CSV/Excel
+     */
+    public function downloadDummyFile(): StreamedResponse {
+        $filename = "dummy_products.csv";
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
+        ];
+
+        return response()->stream(function () {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Product Name', 'Product Unique ID', 'Product Image', 'Description', 'Price', 'Tags', 'Product Link']);
+
+            // Sample products
+            for ($i = 1; $i <= 5; $i++) {
+                fputcsv($file, [
+                    "Product {$i}",
+                    "P100{$i}",
+                    "https://example.com/image{$i}.jpg",
+                    "Description for product {$i}",
+                    rand(10, 100),
+                    "tag{$i},tag{$i}a",
+                    "https://example.com/product{$i}"
+                ]);
+            }
+
+            fclose($file);
+        }, 200, $headers);
+    }
+
+    // /**
+    //  * Handle MSME CSV/Excel upload
+    //  */
+    // public function uploadProducts(Request $request) {
+    //     // dd('here');
+    //     $validator = Validator::make($request->all(), [
+    //         // 'chatbot_id' => 'required|integer|exists:chatbots,id',
+    //         'files' => 'required|file|mimes:csv,xls,xlsx|max:102400' // 100MB in KB
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'errors' => $validator->errors()
+    //         ], 422);
+    //     }
+
+    //     // dd($request->all());
+
+    //     $createChatbot = Chatbot::create([
+    //         'user_id' => Auth::user()->id,
+    //         'name' => 'MSME Bot ' . time(),
+    //         'description' => 'Auto-generated bot for MSME product upload',
+    //         'platform' => '2',
+    //     ]);
+
+    //     $chatbotId = $createChatbot->id;
+    //     $file = $request->file('files');
+
+    //     // Generate unique stored file name
+    //     $originalName = $file->getClientOriginalName();
+    //     $ext = strtolower($file->getClientOriginalExtension());
+    //     $safeName = pathinfo($originalName, PATHINFO_FILENAME);
+    //     $storedName = $safeName . '_' . time() . '_' . Str::random(6) . '.' . $ext;
+    //     $storePath = "public/msme_uploads/{$chatbotId}/";
+    //     $storedPath = $file->storeAs($storePath, $storedName);
+
+    //     // Save original file record
+    //     $fileRecord = File::create([
+    //         'chatbot_id' => $chatbotId,
+    //         'file_name' => $originalName,
+    //         'file_path' => $storedPath,
+    //         'file_type' => $ext,
+    //         'file_size' => $file->getSize()
+    //     ]);
+
+    //     // Estimate total rows (for progress tracking)
+    //     $totalRows = $this->estimateRowCount(storage_path('app/' . $storedPath), $ext);
+
+    //     // Create UploadJob
+    //     $uploadUuid = (string) Str::uuid();
+    //     $job = UploadJob::create([
+    //         'upload_uuid' => $uploadUuid,
+    //         'chatbot_id' => $chatbotId,
+    //         'file_record_id' => $fileRecord->id,
+    //         'total_rows' => $totalRows,
+    //         'processed_rows' => 0,
+    //         'inserted' => 0,
+    //         'updated' => 0,
+    //         'status' => 'queued',
+    //     ]);
+
+    //     // Queue the import (ProductsImport handles chunked reading & JSON snapshot)
+    //     $import = new ProductsImport($chatbotId, $uploadUuid);
+    //     Excel::queueImport($import, $storedPath, 'local');
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'File uploaded and import queued successfully.',
+    //         'upload_uuid' => $uploadUuid,
+    //         'job_id' => $job->id
+    //     ], 200);
+    // }
+
+    // /**
+    //  * Poll upload status
+    //  */
+    // public function uploadStatus(string $uploadUuid) {
+    //     $job = UploadJob::where('upload_uuid', $uploadUuid)->first();
+
+    //     if (!$job) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Upload job not found.'
+    //         ], 404);
+    //     }
+
+    //     // Optional: fetch JSON snapshot if done
+    //     $snapshot = null;
+    //     if ($job->status === 'done') {
+    //         $json = \App\Models\ProductJson::where('chatbot_id', $job->chatbot_id)->first();
+    //         $snapshot = $json ? $json->products : null;
+    //     }
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'data' => [
+    //             'status' => $job->status,
+    //             'total_rows' => $job->total_rows,
+    //             'processed_rows' => $job->processed_rows,
+    //             'inserted' => $job->inserted,
+    //             'updated' => $job->updated,
+    //             'error' => $job->error,
+    //             'snapshot' => $snapshot
+    //         ]
+    //     ]);
+    // }
+
+    // /**
+    //  * Estimate total rows for progress tracking
+    //  */
+    // private function estimateRowCount(string $fullPath, string $ext): int {
+    //     try {
+    //         if ($ext === 'csv') {
+    //             $count = 0;
+    //             $f = fopen($fullPath, 'r');
+    //             while (!feof($f)) {
+    //                 $line = fgets($f);
+    //                 if ($line !== false) $count++;
+    //             }
+    //             fclose($f);
+    //             return max(0, $count - 1); // minus header
+    //         } else {
+    //             // XLS/XLSX: read highest row of first sheet
+    //             $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($fullPath);
+    //             $reader->setReadDataOnly(true);
+    //             $spreadsheet = $reader->load($fullPath);
+    //             $sheet = $spreadsheet->getActiveSheet();
+    //             return max(0, $sheet->getHighestDataRow() - 1);
+    //         }
+    //     } catch (\Exception $e) {
+    //         return 0;
+    //     }
+    // }
+
+    // public function downloadDummyFile() {
+    //     $dummyData = [
+    //         ['Product Name', 'Product Unique ID', 'Product Image', 'Description', 'Price', 'Tags', 'Product Link'],
+    //         ['Smartphone X100', 'P001', 'https://example.com/images/smartphone.jpg', 'Latest smartphone with 6GB RAM', 299.99, 'smartphone,electronics', 'https://example.com/product/P001'],
+    //         ['Wireless Headphones W200', 'P002', 'https://example.com/images/headphones.jpg', 'Noise-cancelling wireless headphones', 99.50, 'headphones,audio', 'https://example.com/product/P002'],
+    //         ['Gaming Laptop G500', 'P003', 'https://example.com/images/laptop.jpg', 'High performance laptop for gaming', 1200.00, 'laptop,gaming', 'https://example.com/product/P003'],
+    //         ['Smartwatch S10', 'P004', 'https://example.com/images/smartwatch.jpg', 'Fitness smartwatch with heart rate monitor', 149.75, 'smartwatch,wearable', 'https://example.com/product/P004'],
+    //         ['Digital Camera D300', 'P005', 'https://example.com/images/camera.jpg', '24MP digital camera with 4K video', 450.00, 'camera,photography', 'https://example.com/product/P005'],
+    //     ];
+
+    //     // Using Laravel-Excel
+    //     return \Maatwebsite\Excel\Facades\Excel::download(
+    //         new class($dummyData) implements \Maatwebsite\Excel\Concerns\FromArray {
+    //             protected $data;
+    //             public function __construct($data) {
+    //                 $this->data = $data;
+    //             }
+    //             public function array(): array {
+    //                 return $this->data;
+    //             }
+    //         },
+    //         'dummy_products.xlsx'
+    //     );
+    // }
+
+    // /**
+    //  * Upload endpoint: Save file, create UploadJob, queue import (Maatwebsite)
+    //  */
+    // public function uploadProducts(Request $request) {
+    //     $validator = Validator::make($request->all(), [
+    //         'chatbot_id' => 'required|integer|exists:chatbots,id',
+    //         'file' => 'required|file|mimes:csv,xls,xlsx|max:102400' // 100MB in KB
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+    //     }
+
+    //     $chatbotId = (int) $request->input('chatbot_id');
+
+    //     $file = $request->file('file');
+    //     $originalName = $file->getClientOriginalName();
+    //     $ext = strtolower($file->getClientOriginalExtension());
+    //     $safeName = pathinfo($originalName, PATHINFO_FILENAME);
+    //     $storedName = $safeName . '_' . time() . '_' . Str::random(6) . '.' . $ext;
+    //     $storePath = "public/msme_uploads/{$chatbotId}/";
+    //     $storedPath = $file->storeAs($storePath, $storedName);
+
+    //     // Save file record
+    //     $fileRecord = File::create([
+    //         'chatbot_id' => $chatbotId,
+    //         'file_name' => $originalName,
+    //         'file_path' => $storedPath,
+    //         'file_type' => $ext,
+    //         'file_size' => $file->getSize()
+    //     ]);
+
+    //     // Count rows roughly (for CSV we can stream count; for xlsx it's heavier)
+    //     $totalRows = $this->estimateRowCount(storage_path('app/' . $storedPath), $ext);
+
+    //     // Create UploadJob
+    //     $uploadUuid = (string) Str::uuid();
+    //     $job = UploadJob::create([
+    //         'upload_uuid' => $uploadUuid,
+    //         'chatbot_id' => $chatbotId,
+    //         'file_record_id' => $fileRecord->id,
+    //         'total_rows' => $totalRows,
+    //         'processed_rows' => 0,
+    //         'inserted' => 0,
+    //         'updated' => 0,
+    //         'status' => 'queued',
+    //     ]);
+
+    //     // Queue the import using maatwebsite excel queue import
+    //     // ProductsImport implements ShouldQueue and WithChunkReading
+    //     $import = new ProductsImport($chatbotId, $uploadUuid);
+
+    //     // Use queueImport to ensure chunks are queued (Maatwebsite)
+    //     Excel::queueImport($import, $storedPath, 'local'); // disk 'local' since stored under storage/app
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'File uploaded and import queued.',
+    //         'upload_uuid' => $uploadUuid,
+    //         'job_id' => $job->id
+    //     ], 200);
+    // }
+
+    // /**
+    //  * Simple status endpoint for frontend polling
+    //  */
+    // public function uploadStatus($upload_uuid) {
+    //     $job = UploadJob::where('upload_uuid', $upload_uuid)->first();
+    //     if (!$job) {
+    //         return response()->json(['success' => false, 'message' => 'Job not found'], 404);
+    //     }
+
+    //     // If status done, build final JSON snapshot if not already
+    //     if ($job->status === 'done') {
+    //         $json = ProductJson::where('chatbot_id', $job->chatbot_id)->first();
+    //         $snapshot = $json ? $json->products : null;
+    //     } else {
+    //         $snapshot = null;
+    //     }
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'data' => [
+    //             'status' => $job->status,
+    //             'total_rows' => $job->total_rows,
+    //             'processed_rows' => $job->processed_rows,
+    //             'inserted' => $job->inserted,
+    //             'updated' => $job->updated,
+    //             'error' => $job->error,
+    //             'snapshot' => $snapshot
+    //         ]
+    //     ]);
+    // }
+
+    // /**
+    //  * Utility: estimate row count for CSV (fast) or XLSX (best-effort)
+    //  */
+    // private function estimateRowCount($fullPath, $ext) {
+    //     try {
+    //         if ($ext === 'csv') {
+    //             $count = 0;
+    //             $f = fopen($fullPath, 'r');
+    //             while (!feof($f)) {
+    //                 $line = fgets($f);
+    //                 if ($line !== false) $count++;
+    //             }
+    //             fclose($f);
+    //             // subtract header row
+    //             return max(0, $count - 1);
+    //         } else {
+    //             // for xls/xlsx, attempt to read with PhpSpreadsheet but don't load fully:
+    //             $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($fullPath);
+    //             $reader->setReadDataOnly(true);
+    //             $spreadsheet = $reader->load($fullPath);
+    //             $sheet = $spreadsheet->getActiveSheet();
+    //             return max(0, $sheet->getHighestDataRow() - 1);
+    //         }
+    //     } catch (\Exception $ex) {
+    //         return 0;
+    //     }
+    // }
 }

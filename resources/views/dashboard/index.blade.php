@@ -10,6 +10,40 @@
             background-color: #fff !important;
         }
     </style>
+    <!-- small inline style for previews -->
+    <style>
+        .msme-preview-item {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .4rem;
+            border: 1px solid #ececec;
+            margin-bottom: .5rem;
+            border-radius: 6px;
+        }
+
+        .msme-preview-thumb {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            background: #f7f7f7;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .msme-preview-meta {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .msme-remove-btn {
+            cursor: pointer;
+            color: #dc3545;
+        }
+    </style>
     <div class="chatbot-builder">
 
         <div class="d-flex align-items-center justify-content-between mb-4 mt-4">
@@ -136,6 +170,7 @@
         </div>
     </div>
 
+    {{-- modal for template --}}
     <div class="modal fade" id="templateListModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="templateListLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
@@ -148,6 +183,114 @@
                         <!-- Template cards will be injected here -->
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- modal for msme upload --}}
+    <!-- MSME Upload Modal -->
+    <!-- MSME Upload Modal -->
+    {{-- <div class="modal fade" id="msmeUploadModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="msmeUploadLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <form id="msmeUploadForm" method="POST" action="{{ route('msme.upload-products') }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="msmeUploadLabel">Upload Files for <span id="msmeBotName">Bot</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body">
+
+                        <!-- Dummy download button -->
+                        <div class="mb-3">
+                            <a href="{{ url('/msme/download-dummy') }}" class="btn btn-info">
+                                <i class="bi bi-download"></i> Download Dummy CSV/Excel
+                            </a>
+                        </div>
+
+                        <!-- File drop area -->
+                        <div id="msmeDropArea" class="p-4 border rounded text-center" style="cursor: pointer;">
+                            <p class="mb-1">Drag & drop files here, or click to browse</p>
+                            <small class="text-muted">Allowed: csv, xls, xlsx. Max file size: 100MB</small>
+                            <input id="msmeFileInput" name="files" type="file" style="display:none;" accept=".csv,.xls,.xlsx" />
+                        </div>
+
+                        <!-- Preview area -->
+                        <div id="msmePreview" class="mt-3"></div>
+                        <div id="msmeError" class="text-danger mt-2" style="display:none;"></div>
+
+                        <!-- Bootstrap progress bar -->
+                        <div class="progress mt-3" style="height: 25px; display: none;" id="msmeProgressWrapper">
+                            <div id="msmeProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">
+                                0%
+                            </div>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="mt-2" id="msmeProgressStats" style="display:none;">
+                            Inserted: <span id="msmeInserted">0</span> |
+                            Updated: <span id="msmeUpdated">0</span>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Upload</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div> --}}
+
+    <div class="modal fade" id="msmeUploadModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="msmeUploadLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <form id="msmeUploadForm" method="POST" action="{{ route('msme.upload-products') }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="msmeUploadLabel">Upload Files for <span id="msmeBotName">Bot</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <!-- Dummy download button -->
+                        <div class="mb-3">
+                            <a href="{{ url('/msme/download-dummy') }}" class="btn btn-info" target="_blank">
+                                <i class="bi bi-download"></i> Download Dummy CSV/Excel
+                            </a>
+                        </div>
+
+                        <!-- File drop area -->
+                        <div id="msmeDropArea" class="p-4 border rounded text-center" style="cursor: pointer;">
+                            <p class="mb-1">Drag & drop files here, or click to browse</p>
+                            <small class="text-muted">Allowed: csv, xls, xlsx. Max file size: 100MB</small>
+                            <input id="msmeFileInput" name="files" type="file" style="display:none;" accept=".csv,.xls,.xlsx" />
+                        </div>
+
+                        <!-- Preview area -->
+                        <div id="msmePreview" class="mt-3"></div>
+                        <div id="msmeError" class="text-danger mt-2" style="display:none;"></div>
+
+                        <!-- Bootstrap progress bar -->
+                        <div class="progress mt-3" style="height: 25px; display: none;" id="msmeProgressWrapper">
+                            <div id="msmeProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">
+                                0%
+                            </div>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="mt-2" id="msmeProgressStats" style="display:none;">
+                            Inserted: <span id="msmeInserted">0</span> |
+                            Updated: <span id="msmeUpdated">0</span>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Upload</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -192,59 +335,189 @@
         });
     </script> -->
     <script>
-$(document).ready(function() {
+        $(document).ready(function() {
 
-    // Store selected bot type when modal opens
-    let selectedBotType = null;
+            let selectedBotType = null; // 1 = Web, 2 = MSME
 
-    // Detect which card was clicked (Web or MSME)
-    $('.create-card-item').on('click', function() {
-        selectedBotType = $(this).data('type'); // 1 = Web, 2 = MSME
-        console.log('Selected bot type:', selectedBotType);
-    });
+            // Detect which card was clicked (Web or MSME)
+            $('.create-card-item').on('click', function() {
+                selectedBotType = $(this).data('type');
+                console.log('Selected bot type:', selectedBotType);
+            });
 
-    // Handle 'Start from scratch' click inside modal
-    $('.start-from-scratch').on('click', function(e) {
-        e.preventDefault();
+            // Handle 'Start from scratch' click
+            $('.start-from-scratch').on('click', function(e) {
+                e.preventDefault();
 
-        if (!selectedBotType) {
-            alert('Please select a bot type first!');
-            return;
-        }
-
-        let requestData = {
-            name: selectedBotType == 1 ? 'My Web Bot' : 'My Store Bot',        // required field
-            description: selectedBotType == 1 ? 'This is a new web bot' : 'This is a new store bot',
-            platform: selectedBotType,
-            language: 'en',
-            is_active: true,
-        };
-
-        $.ajax({
-            url: '/chatbots/store',
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            contentType: 'application/json',
-            dataType: 'json',
-            data: JSON.stringify(requestData),
-            success: function(data) {
-                if (data.success) {
-                    // redirect to chatbot build page
-                    window.location.href = '/chatbots/' + data.bot_id + '/build';
-                } else {
-                    alert('Error creating chatbot');
+                if (!selectedBotType) {
+                    alert('Please select a bot type first!');
+                    return;
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error(error);
-                alert('Something went wrong!');
-            }
+
+                // ✅ If Web bot type = 1 → Create bot via AJAX
+                if (selectedBotType == 1) {
+                    let requestData = {
+                        name: 'My Web Bot',
+                        description: 'This is a new web bot',
+                        platform: selectedBotType,
+                        language: 'en',
+                        is_active: true
+                    };
+
+                    $.ajax({
+                        url: '/chatbots/store',
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        contentType: 'application/json',
+                        dataType: 'json',
+                        data: JSON.stringify(requestData),
+                        success: function(data) {
+                            if (data.success) {
+                                window.location.href = '/chatbots/' + data.bot_id + '/build';
+                            } else {
+                                alert('Error creating chatbot');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error(error);
+                            alert('Something went wrong!');
+                        }
+                    });
+
+                } else {
+                    // ✅ MSME bot → Show file upload modal
+                    $("#addchatbot").modal('hide'); // Close previous modal first
+                    setTimeout(function() {
+                        $("#msmeUploadModal").modal('show');
+                    }, 400);
+                }
+            });
+
         });
-    });
-});
-</script>
+    </script>
+
+    {{-- <script>
+        $(document).ready(function() {
+
+            let msmeFiles = []; // store selected files
+
+            const allowedTypes = [
+                'text/csv',
+                'application/vnd.ms-excel', // .xls
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' // .xlsx
+            ];
+            const maxFileSize = 5 * 1024 * 1024; // 5MB
+
+            // Open file browser on click
+            $("#msmeDropArea").on("click", function() {
+                $("#msmeFileInput").click();
+            });
+
+            // Handle file input selection
+            $("#msmeFileInput").on("change", function(e) {
+                handleFiles(e.target.files);
+            });
+
+            // Drag & Drop events
+            $("#msmeDropArea").on("dragover", function(e) {
+                e.preventDefault();
+                $(this).addClass("bg-light");
+            });
+
+            $("#msmeDropArea").on("dragleave", function(e) {
+                e.preventDefault();
+                $(this).removeClass("bg-light");
+            });
+
+            $("#msmeDropArea").on("drop", function(e) {
+                e.preventDefault();
+                $(this).removeClass("bg-light");
+                handleFiles(e.originalEvent.dataTransfer.files);
+            });
+
+            // Handle and Validate Files
+            function handleFiles(files) {
+                $.each(files, function(i, file) {
+                    if (!allowedTypes.includes(file.type)) {
+                        showError("Invalid file type: " + file.name);
+                        return;
+                    }
+                    if (file.size > maxFileSize) {
+                        showError("File size too large: " + file.name);
+                        return;
+                    }
+                    msmeFiles.push(file);
+                    previewFiles();
+                });
+            }
+
+            // Show preview of files
+            function previewFiles() {
+                $("#msmePreview").html(''); // clear old preview
+                $.each(msmeFiles, function(i, file) {
+                    $("#msmePreview").append(`
+                <div class="d-flex justify-content-between align-items-center border p-2 mb-2">
+                    <span>${file.name} (${Math.round(file.size / 1024)} KB)</span>
+                    <button class="btn btn-sm btn-danger remove-file" data-index="${i}">Remove</button>
+                </div>
+            `);
+                });
+            }
+
+            // Remove file
+            $(document).on("click", ".remove-file", function() {
+                let index = $(this).data("index");
+                msmeFiles.splice(index, 1);
+                previewFiles();
+            });
+
+            // Show error message
+            function showError(message) {
+                $("#msmeError").text(message).show();
+                setTimeout(() => $("#msmeError").hide(), 3000);
+            }
+
+            // Submit Upload Form
+            $("#msmeUploadForm").on("submit", function(e) {
+                e.preventDefault();
+
+                if (msmeFiles.length === 0) {
+                    showError("Please select files before uploading.");
+                    return;
+                }
+
+                let formData = new FormData();
+                $.each(msmeFiles, function(i, file) {
+                    formData.append("files[]", file);
+                });
+
+                // append bot ID or other data if needed
+                formData.append("chatbot_id", $("#msmeChatbotId").val());
+
+                $.ajax({
+                    url: "/msme/upload-files", // CHANGE THIS URL
+                    method: "POST",
+                    headers: {
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                    },
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(res) {
+                        alert("Files uploaded successfully!");
+                        $("#msmeUploadModal").modal("hide");
+                    },
+                    error: function(xhr) {
+                        showError("Upload failed. Try again.");
+                    }
+                });
+            });
+
+        });
+    </script> --}}
+
 
     <script>
         $(document).ready(function() {
@@ -330,6 +603,449 @@ $(document).ready(function() {
                 });
             });
 
+        });
+    </script>
+
+    {{-- <script>
+        $(document).ready(function() {
+
+            const $msmeForm = $('#msmeUploadForm');
+            const $fileInput = $('#msmeFileInput');
+            const $dropArea = $('#msmeDropArea');
+            const $preview = $('#msmePreview');
+            const $error = $('#msmeError');
+
+            let uploadUuid = null;
+            let pollInterval = null;
+
+            // Click to select file
+            $dropArea.on('click', function() {
+                $fileInput.click();
+            });
+
+            // Drag & Drop
+            $dropArea.on('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).addClass('dragover');
+            });
+
+            $dropArea.on('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).removeClass('dragover');
+            });
+
+            $dropArea.on('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).removeClass('dragover');
+                const files = e.originalEvent.dataTransfer.files;
+                $fileInput[0].files = files;
+                renderPreview(files);
+            });
+
+            // File input change
+            $fileInput.on('change', function() {
+                renderPreview(this.files);
+            });
+
+            // Render file preview
+            function renderPreview(files) {
+                $preview.empty();
+                $error.hide();
+                if (files.length === 0) return;
+
+                Array.from(files).forEach(file => {
+                    const item = $('<div>').text(file.name + ' (' + formatBytes(file.size) + ')');
+                    $preview.append(item);
+                });
+            }
+
+            // Format bytes nicely
+            function formatBytes(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // Submit form
+            $msmeForm.on('submit', function(e) {
+                e.preventDefault();
+                if ($fileInput[0].files.length === 0) {
+                    alert('Please select a file to upload.');
+                    return;
+                }
+
+                const formData = new FormData(this);
+                // const chatbotId = $('#msmeChatbotId').val();
+                // formData.append('chatbot_id', chatbotId);
+
+                const $submitBtn = $(this).find('button[type="submit"]');
+                $submitBtn.prop('disabled', true).text('Uploading...');
+
+                $.ajaxSetup({
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    }
+                });
+
+                $.ajax({
+                    url: '/msme/upload-products',
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(res) {
+                        uploadUuid = res.upload_uuid;
+                        startPolling();
+                    },
+                    error: function(xhr) {
+                        let msg = 'Upload failed.';
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            msg = Object.values(xhr.responseJSON.errors).flat().join(', ');
+                        }
+                        $error.text(msg).show();
+                        $submitBtn.prop('disabled', false).text('Upload');
+                    }
+                });
+            });
+
+            // Poll upload progress
+            function startPolling() {
+                if (!uploadUuid) return;
+
+                pollInterval = setInterval(function() {
+                    $.getJSON('/msme/upload-status/' + uploadUuid, function(res) {
+                        if (res.success) {
+                            const data = res.data;
+                            const percent = data.total_rows > 0 ?
+                                Math.round((data.processed_rows / data.total_rows) * 100) :
+                                0;
+
+                            updateProgressBar(percent, data.inserted, data.updated);
+
+                            if (data.status === 'done' || data.status === 'failed') {
+                                clearInterval(pollInterval);
+                                $('#msmeUploadModal').modal('hide');
+                                alert('Upload completed! Inserted: ' + data.inserted + ', Updated: ' + data.updated);
+                                location.reload(); // optional: refresh product list
+                            }
+                        }
+                    });
+                }, 2000);
+            }
+
+            // Update Bootstrap progress bar and stats
+            function updateProgressBar(percent, inserted, updated) {
+                const $wrapper = $('#msmeProgressWrapper');
+                const $bar = $('#msmeProgressBar');
+                const $stats = $('#msmeProgressStats');
+
+                $wrapper.show();
+                $stats.show();
+
+                $bar.css('width', percent + '%');
+                $bar.text(percent + '%');
+
+                $('#msmeInserted').text(inserted);
+                $('#msmeUpdated').text(updated);
+            }
+        });
+    </script> --}}
+
+    {{-- <script>
+        $(document).ready(function() {
+
+            const $msmeForm = $('#msmeUploadForm');
+            const $fileInput = $('#msmeFileInput');
+            const $dropArea = $('#msmeDropArea');
+            const $preview = $('#msmePreview');
+            const $error = $('#msmeError');
+
+            let uploadUuid = null;
+            let pollInterval = null;
+
+            // Click to select file
+            $dropArea.on('click', function() {
+                $fileInput.click();
+            });
+
+            // Drag & Drop
+            $dropArea.on('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).addClass('dragover');
+            });
+
+            $dropArea.on('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).removeClass('dragover');
+            });
+
+            $dropArea.on('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).removeClass('dragover');
+                const files = e.originalEvent.dataTransfer.files;
+                $fileInput[0].files = files;
+                renderPreview(files);
+            });
+
+            // File input change
+            $fileInput.on('change', function() {
+                renderPreview(this.files);
+            });
+
+            // Render file preview
+            function renderPreview(files) {
+                $preview.empty();
+                $error.hide();
+                if (files.length === 0) return;
+
+                Array.from(files).forEach(file => {
+                    const item = $('<div>').text(file.name + ' (' + formatBytes(file.size) + ')');
+                    $preview.append(item);
+                });
+            }
+
+            // Format bytes nicely
+            function formatBytes(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // Submit form
+            $msmeForm.on('submit', function(e) {
+                e.preventDefault();
+                if ($fileInput[0].files.length === 0) {
+                    alert('Please select a file to upload.');
+                    return;
+                }
+
+                const formData = new FormData(this);
+
+                const $submitBtn = $(this).find('button[type="submit"]');
+                $submitBtn.prop('disabled', true).text('Uploading...');
+
+                $.ajaxSetup({
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    }
+                });
+
+                $.ajax({
+                    url: '/msme/upload-products',
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(res) {
+                        uploadUuid = res.upload_uuid;
+                        startPolling();
+                    },
+                    error: function(xhr) {
+                        let msg = 'Upload failed.';
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            msg = Object.values(xhr.responseJSON.errors).flat().join(', ');
+                        }
+                        $error.text(msg).show();
+                        $submitBtn.prop('disabled', false).text('Upload');
+                    }
+                });
+            });
+
+            // Poll upload progress
+            function startPolling() {
+                if (!uploadUuid) return;
+
+                pollInterval = setInterval(function() {
+                    $.getJSON('/msme/upload-status/' + uploadUuid, function(res) {
+                        if (res.success) {
+                            const data = res.data;
+                            const percent = data.total_rows > 0 ?
+                                Math.round((data.processed_rows / data.total_rows) * 100) :
+                                0;
+
+                            updateProgressBar(percent, data.inserted, data.updated);
+
+                            if (data.status === 'done' || data.status === 'failed') {
+                                clearInterval(pollInterval);
+                                $('#msmeUploadModal').modal('hide');
+                                alert('Upload completed! Inserted: ' + data.inserted + ', Updated: ' + data.updated);
+                                location.reload(); // optional: refresh product list
+                            }
+                        }
+                    });
+                }, 2000);
+            }
+
+            // Update Bootstrap progress bar and stats
+            function updateProgressBar(percent, inserted, updated) {
+                const $wrapper = $('#msmeProgressWrapper');
+                const $bar = $('#msmeProgressBar');
+                const $stats = $('#msmeProgressStats');
+
+                $wrapper.show();
+                $stats.show();
+
+                $bar.css('width', percent + '%');
+                $bar.text(percent + '%');
+
+                $('#msmeInserted').text(inserted);
+                $('#msmeUpdated').text(updated);
+            }
+
+        });
+    </script> --}}
+    <script>
+        $(document).ready(function() {
+            const $msmeForm = $('#msmeUploadForm');
+            const $fileInput = $('#msmeFileInput');
+            const $dropArea = $('#msmeDropArea');
+            const $preview = $('#msmePreview');
+            const $error = $('#msmeError');
+
+            let uploadUuid = null;
+            let pollInterval = null;
+
+            // Click to select file
+            $dropArea.on('click', function() {
+                $fileInput.click();
+            });
+
+            // Drag & Drop
+            $dropArea.on('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).addClass('dragover');
+            });
+
+            $dropArea.on('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).removeClass('dragover');
+            });
+
+            $dropArea.on('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).removeClass('dragover');
+                const files = e.originalEvent.dataTransfer.files;
+                $fileInput[0].files = files;
+                renderPreview(files);
+            });
+
+            // File input change
+            $fileInput.on('change', function() {
+                renderPreview(this.files);
+            });
+
+            // Render file preview
+            function renderPreview(files) {
+                $preview.empty();
+                $error.hide();
+                if (files.length === 0) return;
+                Array.from(files).forEach(file => {
+                    const item = $('<div>').text(file.name + ' (' + formatBytes(file.size) + ')');
+                    $preview.append(item);
+                });
+            }
+
+            // Format bytes nicely
+            function formatBytes(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // Submit form
+            $msmeForm.on('submit', function(e) {
+                e.preventDefault();
+                if ($fileInput[0].files.length === 0) {
+                    alert('Please select a file to upload.');
+                    return;
+                }
+
+                const formData = new FormData(this);
+                const $submitBtn = $(this).find('button[type="submit"]');
+                $submitBtn.prop('disabled', true).text('Uploading...');
+
+                $.ajaxSetup({
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    }
+                });
+
+                $.ajax({
+                    url: $(this).attr('action'),
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(res) {
+                        uploadUuid = res.upload_uuid;
+                        startPolling();
+                    },
+                    error: function(xhr) {
+                        let msg = 'Upload failed.';
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            msg = Object.values(xhr.responseJSON.errors).flat().join(', ');
+                        }
+                        $error.text(msg).show();
+                        $submitBtn.prop('disabled', false).text('Upload');
+                    }
+                });
+            });
+
+            // Poll upload progress
+            function startPolling() {
+                if (!uploadUuid) return;
+
+                pollInterval = setInterval(function() {
+                    $.getJSON('/msme/upload-status/' + uploadUuid, function(res) {
+                        if (res.success) {
+                            const data = res.data;
+                            const percent = data.total_rows > 0 ?
+                                Math.round((data.processed_rows / data.total_rows) * 100) :
+                                0;
+
+                            updateProgressBar(percent, data.inserted, data.updated);
+
+                            if (data.status === 'done' || data.status === 'failed') {
+                                clearInterval(pollInterval);
+                                $('#msmeUploadModal').modal('hide');
+                                alert('Upload completed! Inserted: ' + data.inserted + ', Updated: ' + data.updated);
+                                location.reload();
+                            }
+                        }
+                    });
+                }, 2000);
+            }
+
+            // Update Bootstrap progress bar and stats
+            function updateProgressBar(percent, inserted, updated) {
+                const $wrapper = $('#msmeProgressWrapper');
+                const $bar = $('#msmeProgressBar');
+                const $stats = $('#msmeProgressStats');
+
+                $wrapper.show();
+                $stats.show();
+
+                $bar.css('width', percent + '%');
+                $bar.text(percent + '%');
+
+                $('#msmeInserted').text(inserted);
+                $('#msmeUpdated').text(updated);
+            }
         });
     </script>
 @endsection
