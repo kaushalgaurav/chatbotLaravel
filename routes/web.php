@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\TemplateController;
+use Laravel\Horizon\Horizon;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,6 +19,10 @@ use App\Http\Controllers\TemplateController;
 */
 
 Auth::routes(['verify' => true]);
+
+Horizon::auth(function ($request) {
+    return true; // Later we restrict by user role
+});
 
 Route::get('/', [HomeController::class, 'root'])->name('root')->middleware('auth');
 

@@ -14,9 +14,14 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\Importable;
+use Throwable;
+use App\Events\ImportProgressUpdated;
 
 class ProductsImport implements ToCollection, WithHeadingRow, WithChunkReading, ShouldQueue {
     use Importable, Queueable;
+
+    public int $tries = 3;
+    public int $timeout = 3600;
 
     protected int $chatbotId;
     protected string $uploadUuid;
@@ -24,72 +29,20 @@ class ProductsImport implements ToCollection, WithHeadingRow, WithChunkReading, 
     public function __construct(int $chatbotId, string $uploadUuid) {
         $this->chatbotId = $chatbotId;
         $this->uploadUuid = $uploadUuid;
-        $this->onQueue('default');
-        $this->onConnection('database');
+
+        $this->onConnection('redis');
+        $this->onQueue(env('IMPORT_QUEUE', 'imports'));
     }
-
-    // public function collection(Collection $rows) {
-    //     try {
-    //         DB::transaction(function () use ($rows) {
-    //             $inserted = 0;
-    //             $updated = 0;
-
-    //             foreach ($rows as $row) {
-    //                 $map = $this->normalizeRow($row->toArray());
-    //                 $uniqueId = trim((string)($map['product_unique_id'] ?? ''));
-    //                 if (!$uniqueId) continue;
-
-    //                 $data = [
-    //                     'chatbot_id' => $this->chatbotId,
-    //                     'product_name' => $map['product_name'] ?? null,
-    //                     'product_unique_id' => $uniqueId,
-    //                     'product_image' => $map['product_image'] ?? null,
-    //                     'description' => $map['description'] ?? null,
-    //                     'price' => $this->sanitizePrice($map['price'] ?? null),
-    //                     'tags' => $map['tags'] ?? null,
-    //                     'product_link' => $map['product_link'] ?? null,
-    //                 ];
-
-    //                 $existing = Product::where('chatbot_id', $this->chatbotId)
-    //                     ->where('product_unique_id', $uniqueId)
-    //                     ->first();
-
-    //                 if ($existing) {
-    //                     $existing->update($data);
-    //                     $updated++;
-    //                 } else {
-    //                     Product::create($data);
-    //                     $inserted++;
-    //                 }
-    //             }
-
-    //             $job = UploadJob::where('upload_uuid', $this->uploadUuid)->first();
-    //             if ($job) {
-    //                 $job->increment('processed_rows', $rows->count());
-    //                 $job->increment('inserted', $inserted);
-    //                 $job->increment('updated', $updated);
-
-    //                 if ($job->processed_rows >= $job->total_rows && $job->status !== 'done') {
-    //                     $this->buildSnapshot($this->chatbotId);
-    //                     $job->status = 'done';
-    //                     $job->save();
-    //                 } else {
-    //                     $job->status = 'processing';
-    //                     $job->save();
-    //                 }
-    //             }
-    //         });
-    //     } catch (\Throwable $e) {
-    //         Log::error("ProductsImport chunk failed: " . $e->getMessage(), ['rows' => $rows->toArray()]);
-    //         throw $e;
-    //     }
-    // }
 
     public function collection(Collection $rows) {
         try {
+            if ($rows->isEmpty()) {
+                Log::info("No rows to process for upload {$this->uploadUuid}");
+                return;
+            }
+
             DB::transaction(function () use ($rows) {
-                $inserted = 0;
-                $updated = 0;
+                $productsToUpsert = [];
 
                 foreach ($rows as $row) {
                     $map = $this->normalizeRow($row->toArray());
@@ -97,95 +50,102 @@ class ProductsImport implements ToCollection, WithHeadingRow, WithChunkReading, 
 
                     if (empty($uniqueId)) continue;
 
-                    $data = [
+                    $productsToUpsert[] = [
                         'chatbot_id' => $this->chatbotId,
-                        'product_name' => $map['product_name'] ?? null,
                         'product_unique_id' => $uniqueId,
+                        'product_name' => $map['product_name'] ?? null,
                         'product_image' => $map['product_image'] ?? null,
                         'description' => $map['description'] ?? null,
                         'price' => $this->sanitizePrice($map['price'] ?? null),
                         'tags' => $map['tags'] ?? null,
                         'product_link' => $map['product_link'] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
                     ];
-
-                    $existing = Product::where('chatbot_id', $this->chatbotId)
-                        ->where('product_unique_id', $uniqueId)
-                        ->first();
-
-                    if ($existing) {
-                        $existing->update($data);
-                        $updated++;
-                    } else {
-                        Product::create($data);
-                        $inserted++;
-                    }
                 }
 
-                $job = UploadJob::where('upload_uuid', $this->uploadUuid)->first();
-                if ($job) {
-                    $job->increment('processed_rows', $rows->count());
-                    $job->increment('inserted', $inserted);
-                    $job->increment('updated', $updated);
+                // Only insert if data exists
+                if (!empty($productsToUpsert)) {
+                    Product::upsert(
+                        $productsToUpsert,
+                        ['product_unique_id', 'chatbot_id'],
+                        ['product_name', 'product_image', 'description', 'price', 'tags', 'product_link', 'updated_at']
+                    );
 
-                    if ($job->processed_rows >= $job->total_rows && $job->status !== 'done') {
-                        $this->buildSnapshot($this->chatbotId);
-                        $job->status = 'done';
+                    $job = UploadJob::where('upload_uuid', $this->uploadUuid)->first();
+                    if ($job) {
+                        $job->increment('processed_rows', $rows->count());
+                        $job->increment('inserted', count($productsToUpsert));
+                        $job->status = $job->processed_rows >= $job->total_rows ? 'done' : 'processing';
                         $job->save();
-                    } else {
-                        $job->status = 'processing';
-                        $job->save();
+
+                        // Broadcast progress
+                        event(new ImportProgressUpdated($job));
+
+                        if ($job->status === 'done') {
+                            $this->buildSnapshot($this->chatbotId);
+                        }
                     }
+                } else {
+                    Log::info("No valid products found for upload {$this->uploadUuid}");
                 }
             });
-        } catch (\Throwable $e) {
-            \Log::error('ProductsImport error: ' . $e->getMessage(), [
+        } catch (Throwable $e) {
+            Log::error('ProductsImport error: ' . $e->getMessage(), [
                 'chatbot_id' => $this->chatbotId,
-                'rows' => $rows->toArray()
+                'upload_uuid' => $this->uploadUuid,
             ]);
+
             $job = UploadJob::where('upload_uuid', $this->uploadUuid)->first();
             if ($job) {
                 $job->status = 'failed';
                 $job->error = $e->getMessage();
                 $job->save();
             }
-            throw $e; // re-throw to mark the job as failed
+
+            throw $e;
         }
     }
 
-
     public function chunkSize(): int {
-        return 100; // adjust if needed
+        return 500;
     }
 
+    /**
+     * Flexible header normalization
+     */
     private function normalizeRow(array $row): array {
         $out = [];
         foreach ($row as $k => $v) {
-            $key = strtolower(trim(str_replace(['-', '/', '\\'], ' ', $k)));
-            $key = preg_replace('/\s+/', ' ', $key);
+            $key = strtolower(trim($k));
+            $key = preg_replace('/[\s\-_\/\\\]+/', ' ', $key); // normalize spaces/underscores/dashes
+            $value = trim((string)$v) ?: null;
 
-            if (strpos($key, 'product name') !== false || strpos($key, 'name') === 0) $out['product_name'] = $v;
-            elseif (strpos($key, 'unique') !== false && strpos($key, 'id') !== false) $out['product_unique_id'] = $v;
-            elseif (strpos($key, 'image') !== false) $out['product_image'] = $v;
-            elseif (strpos($key, 'description') !== false) $out['description'] = $v;
-            elseif (strpos($key, 'price') !== false) $out['price'] = $v;
-            elseif (strpos($key, 'tag') !== false) $out['tags'] = $v;
-            elseif (strpos($key, 'link') !== false || strpos($key, 'url') !== false) $out['product_link'] = $v;
+            if (str_contains($key, 'product name')) $out['product_name'] = $value;
+            elseif (str_contains($key, 'unique') && str_contains($key, 'id')) $out['product_unique_id'] = $value;
+            elseif (str_contains($key, 'image')) $out['product_image'] = $value;
+            elseif (str_contains($key, 'description')) $out['description'] = $value;
+            elseif (str_contains($key, 'price')) $out['price'] = $value;
+            elseif (str_contains($key, 'tag')) $out['tags'] = $value;
+            elseif (str_contains($key, 'link') || str_contains($key, 'url')) $out['product_link'] = $value;
         }
+
         return $out;
     }
 
     private function sanitizePrice($value) {
-        if (is_null($value) || $value === '') return null;
+        if (is_null($value)) return null;
         $v = preg_replace('/[^\d\.\-]/', '', (string)$value);
         return $v === '' ? null : (float)$v;
     }
 
     private function buildSnapshot(int $chatbotId) {
         $allProducts = Product::where('chatbot_id', $chatbotId)->get();
-        $snapshot = [];
+        if ($allProducts->isEmpty()) return; // Do not create ProductJson if no products
 
-        foreach ($allProducts as $p) {
-            $snapshot[$p->product_unique_id] = [
+        $snapshot = $allProducts->map(function ($p) {
+            return [
+                'product_id' => $p->product_unique_id,
                 'product_name' => $p->product_name,
                 'product_image' => $p->product_image,
                 'description' => $p->description,
@@ -195,7 +155,7 @@ class ProductsImport implements ToCollection, WithHeadingRow, WithChunkReading, 
                 'created_at' => $p->created_at?->toDateTimeString(),
                 'updated_at' => $p->updated_at?->toDateTimeString(),
             ];
-        }
+        })->toArray();
 
         ProductJson::updateOrCreate(
             ['chatbot_id' => $chatbotId],

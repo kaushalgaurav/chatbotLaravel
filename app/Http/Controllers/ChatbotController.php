@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ChatbotController extends Controller {
     /**
@@ -409,7 +410,7 @@ class ChatbotController extends Controller {
 
         $snapshot = null;
         if ($job->status === 'done') {
-            $json = \App\Models\ProductJson::where('chatbot_id', $job->chatbot_id)->first();
+            $json = ProductJson::where('chatbot_id', $job->chatbot_id)->first();
             $snapshot = $json ? $json->products : null;
         }
 
@@ -468,7 +469,7 @@ class ChatbotController extends Controller {
             fputcsv($file, ['Product Name', 'Product Unique ID', 'Product Image', 'Description', 'Price', 'Tags', 'Product Link']);
 
             // Sample products
-            for ($i = 1; $i <= 5; $i++) {
+            for ($i = 1; $i <= 1000; $i++) {
                 fputcsv($file, [
                     "Product {$i}",
                     "P100{$i}",
