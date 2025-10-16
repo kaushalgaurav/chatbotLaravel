@@ -312,8 +312,8 @@
                     $(".build-it-wrapper").hide();
                     $(".template-wrapper").hide();
                 } else {
-                    $(".start-from-scratch-wrapper").hide();
-                    $(".build-it-wrapper, .template-wrapper").show();
+                    $(".build-it-wrapper").hide();
+                    $(".start-from-scratch-wrapper, .template-wrapper").show();
                 }
             });
 
