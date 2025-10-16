@@ -39,7 +39,38 @@ export default function NodeInspector({ node, onClose, updateNode: updateNodePro
     "link",
   ];
 
-  // Helper: update a top-level data key
+  // ------------------------
+  // Text helpers
+  // ------------------------
+  const escapeHtml = (str = "") =>
+    String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+  // preserve multiple spaces/newlines in display with pre-wrap
+  const plainToHtml = (plain = "") =>
+    `<div style="white-space: pre-wrap;">${escapeHtml(plain)}</div>`;
+
+  // convert HTML (from Quill) to plain text — do NOT trim: preserve spaces
+  const htmlToPlainText = (html) => {
+    if (html === undefined || html === null) return "";
+    try {
+      if (typeof document !== "undefined") {
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        // preserve whitespace and do not trim
+        return (div.textContent || div.innerText || "");
+      }
+    } catch (e) {
+      // fallback to regex
+    }
+    return String(html).replace(/<\/?[^>]+(>|$)/g, "");
+  };
+
+  // Helper: update a top-level data key (keeps existing behaviour)
   const setDataKey = (key, value) => {
     updateNode({ ...node, data: { ...node.data, [key]: value } });
   };
@@ -47,59 +78,83 @@ export default function NodeInspector({ node, onClose, updateNode: updateNodePro
   // Render Quill for array of strings (e.g., options)
   const renderArrayField = (key, arr) => {
     if (!Array.isArray(arr)) return null;
+
+    // prefer Html array if present, otherwise derive from plain array
+    const htmlKey = `${key}Html`;
+    const htmlArr = Array.isArray(node.data?.[htmlKey])
+      ? node.data[htmlKey].slice()
+      : Array.isArray(arr)
+      ? arr.map((p) => plainToHtml(p))
+      : [];
+
+    const plainArr = Array.isArray(node.data?.[key])
+      ? node.data[key].slice()
+      : htmlArr.map((h) => htmlToPlainText(h || ""));
+
+    const length = Math.max(htmlArr.length, plainArr.length);
+
     return (
       <div className="mb-3" key={key}>
         <label className="form-label small text-muted">{key}</label>
 
-        {arr.map((item, idx) => (
-          <div
-            key={idx}
-            style={{
-              marginBottom: 8,
-              padding: 8,
-              border: "1px solid #e9ecef",
-              borderRadius: 6,
-              background: "#fff",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-danger"
-                onClick={() => {
-                  const copy = [...arr];
-                  copy.splice(idx, 1);
-                  setDataKey(key, copy);
-                }}
-                title="Remove option"
-              >
-                &times;
-              </button>
-            </div>
-
-            <ReactQuill
-              theme="snow"
-              modules={quillModules}
-              formats={quillFormats}
-              value={item || ""}
-              onChange={(html) => {
-                const copy = [...arr];
-                copy[idx] = html;
-                setDataKey(key, copy);
+        {Array.from({ length }).map((_, idx) => {
+          const itemHtml = htmlArr[idx] ?? "";
+          return (
+            <div
+              key={idx}
+              style={{
+                marginBottom: 8,
+                padding: 8,
+                border: "1px solid #e9ecef",
+                borderRadius: 6,
+                background: "#fff",
               }}
-              style={{ minHeight: 80, marginTop: 8 }}
-            />
-          </div>
-        ))}
+            >
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => {
+                    const newHtml = htmlArr.slice();
+                    newHtml.splice(idx, 1);
+                    const newPlain = newHtml.map((h) => htmlToPlainText(h || ""));
+                    setDataKey(htmlKey, newHtml);
+                    setDataKey(key, newPlain);
+                  }}
+                  title="Remove option"
+                >
+                  &times;
+                </button>
+              </div>
+
+              <ReactQuill
+                theme="snow"
+                modules={quillModules}
+                formats={quillFormats}
+                value={itemHtml || ""}
+                onChange={(html) => {
+                  const copyHtml = htmlArr.slice();
+                  copyHtml[idx] = html;
+                  const plainArray = copyHtml.map((h) => htmlToPlainText(h || ""));
+                  setDataKey(htmlKey, copyHtml);
+                  setDataKey(key, plainArray);
+                }}
+                style={{ minHeight: 80, marginTop: 8 }}
+              />
+            </div>
+          );
+        })}
 
         <div style={{ marginTop: 8 }}>
           <button
             type="button"
             className="btn btn-sm btn-outline-primary"
             onClick={() => {
-              const copy = Array.isArray(arr) ? [...arr] : [];
-              copy.push(""); // new empty option (Quill will show empty editor)
-              setDataKey(key, copy);
+              const copyHtml = htmlArr.slice();
+              copyHtml.push(plainToHtml("")); // add empty HTML entry preserving whitespace behavior
+              const plainArray = copyHtml.map((h) => htmlToPlainText(h || ""));
+              setDataKey(`${key}Html`, copyHtml);
+              setDataKey(key, plainArray);
             }}
           >
             + Add option
@@ -131,8 +186,13 @@ export default function NodeInspector({ node, onClose, updateNode: updateNodePro
               theme="snow"
               modules={quillModules}
               formats={quillFormats}
-              value={val || ""}
-              onChange={(html) => setDataKey(key, html)}
+              // prefer the Html variant if present so whitespace preserved
+              value={node.data?.[`${key}Html`] ?? val ?? ""}
+              onChange={(html) => {
+                // write both html and plain
+                setDataKey(`${key}Html`, html);
+                setDataKey(key, htmlToPlainText(html));
+              }}
               style={{ minHeight: 80 }}
             />
           </div>
@@ -192,9 +252,13 @@ export default function NodeInspector({ node, onClose, updateNode: updateNodePro
                 theme="snow"
                 modules={quillModules}
                 formats={quillFormats}
-                value={node.data?.text || ""}
+                // prefer Html version so Quill renders multiple spaces/newlines correctly
+                value={node.data?.textHtml ?? node.data?.text ?? ""}
                 onChange={(html) =>
-                  updateNode({ ...node, data: { ...node.data, text: html } })
+                  updateNode({
+                    ...node,
+                    data: { ...node.data, textHtml: html, text: htmlToPlainText(html) },
+                  })
                 }
                 style={{ minHeight: 120 }}
               />
@@ -211,9 +275,12 @@ export default function NodeInspector({ node, onClose, updateNode: updateNodePro
                 theme="snow"
                 modules={quillModules}
                 formats={quillFormats}
-                value={node.data?.label || ""}
+                value={node.data?.labelHtml ?? node.data?.label ?? ""}
                 onChange={(html) =>
-                  updateNode({ ...node, data: { ...node.data, label: html } })
+                  updateNode({
+                    ...node,
+                    data: { ...node.data, labelHtml: html, label: htmlToPlainText(html) },
+                  })
                 }
                 style={{ minHeight: 80 }}
               />
@@ -230,8 +297,55 @@ export default function NodeInspector({ node, onClose, updateNode: updateNodePro
           </>
         )}
 
-        {/* BUTTONS / options: commonly stored in node.data.options (array of strings) */}
-        {Array.isArray(node.data?.options) && renderArrayField("options", node.data.options)} 
+        {/* BUTTON node — in correct order */}
+        {node.type === "buttons" && (
+          <>
+            {/* Step 1 — Question */}
+            <label className="form-label small text-muted">Question</label>
+            <div className="mb-3">
+              <ReactQuill
+                theme="snow"
+                modules={quillModules}
+                formats={quillFormats}
+                value={node.data?.questionHtml ?? node.data?.question ?? ""}
+                onChange={(html) =>
+                  updateNode({
+                    ...node,
+                    data: { ...node.data, questionHtml: html, question: htmlToPlainText(html) },
+                  })
+                }
+                style={{ minHeight: 80 }}
+              />
+            </div>
+
+            {/* Step 2 — Options */}
+            {Array.isArray(node.data?.options) && renderArrayField("options", node.data.options)}
+
+            {/* Step 3 — Fallback (Any of the above) */}
+            {node.data?.fallbackLabel !== undefined && (
+              <>
+                <label className="form-label small text-muted">Fallback label</label>
+                <ReactQuill
+                  theme="snow"
+                  modules={quillModules}
+                  formats={quillFormats}
+                  value={node.data?.fallbackLabelHtml ?? node.data?.fallbackLabel ?? ""}
+                  onChange={(html) =>
+                    updateNode({
+                      ...node,
+                      data: {
+                        ...node.data,
+                        fallbackLabelHtml: html,
+                        fallbackLabel: htmlToPlainText(html),
+                      },
+                    })
+                  }
+                  style={{ minHeight: 80 }}
+                />
+              </>
+            )}
+          </>
+        )}
 
         {/* Generic other arrays-of-strings (skipping *Html keys and handled keys) */}
         {renderOtherArrays()}
