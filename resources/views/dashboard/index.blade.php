@@ -10,6 +10,40 @@
             background-color: #fff !important;
         }
     </style>
+    <!-- small inline style for previews -->
+    <style>
+        .msme-preview-item {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .4rem;
+            border: 1px solid #ececec;
+            margin-bottom: .5rem;
+            border-radius: 6px;
+        }
+
+        .msme-preview-thumb {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            background: #f7f7f7;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .msme-preview-meta {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .msme-remove-btn {
+            cursor: pointer;
+            color: #dc3545;
+        }
+    </style>
     <div class="chatbot-builder">
 
         <div class="d-flex align-items-center justify-content-between mb-4 mt-4">
@@ -25,17 +59,17 @@
                 <h5 class="mb-3 fs-22">Create a bot for</h5>
             </div>
             <div class="create-card-body d-flex gap-3">
-                <div class="create-card-item" data-bs-toggle="modal" data-bs-target="#addchatbot">
+                <div class="create-card-item" data-bs-toggle="modal" data-bs-target="#addchatbot" data-type="1">
                     <div class="create-card-icon btn-primary">
                         <img src="{{ URL::asset('build/images/icons/responsive.png') }}" alt="">
                     </div>
-                    <h6 class="mb-0 fs-16">Web</h6>
+                    <h6 class="mb-0 fs-16">Web(Rule Based)</h6>
                 </div>
-                <div class="create-card-item ">
+                <div class="create-card-item" data-bs-toggle="modal" data-bs-target="#addchatbot" data-type="2">
                     <div class="create-card-icon btn-warning">
                         <img src="{{ URL::asset('build/images/icons/ApiChatbot.png') }}" alt="">
                     </div>
-                    <h6 class="mb-0 fs-16">ApiChatbot</h6>
+                    <h6 class="mb-0 fs-16">Small MSME</h6>
                 </div>
             </div>
         </div>
@@ -101,8 +135,10 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <h5 class="modal-title fs-30 text-center mb-5">Start building!</h5>
+                <!-- Hidden input to store selected bot type -->
+                <input type="hidden" id="botType" value="">
                 <div class="row align-items-center justify-content-center">
-                    <div class="col-lg-4 col-md-6">
+                    <div class="col-lg-4 col-md-6 build-it-wrapper">
                         <a href="javascript: void(0);">
                             <div class="start-building-card ">
                                 <div class="start-building-icon"><img src="{{ URL::asset('build/images/icons/scratch.png') }}" alt="scratch"></div>
@@ -111,7 +147,7 @@
                             </div>
                         </a>
                     </div>
-                    <div class="col-lg-4 col-md-6">
+                    <div class="col-lg-4 col-md-6 start-from-scratch-wrapper">
                         <a href="javascript: void(0);" class="start-from-scratch">
                             <div class="start-building-card ">
                                 <div class="start-building-icon"><img src="{{ URL::asset('build/images/icons/scratch.png') }}" alt="scratch"></div>
@@ -120,7 +156,7 @@
                             </div>
                         </a>
                     </div>
-                    <div class="col-lg-4 col-md-6">
+                    <div class="col-lg-4 col-md-6 template-wrapper">
                         <a href="javascript: void(0);" data-bs-toggle="modal" data-bs-target="#templateListModal">
                             <div class="start-building-card ">
                                 <div class="start-building-icon"><img src="{{ URL::asset('build/images/icons/template.png') }}" alt="template"></div>
@@ -129,14 +165,12 @@
                             </div>
                         </a>
                     </div>
-
                 </div>
-
-
-
             </div>
         </div>
     </div>
+
+    {{-- modal for template --}}
     <div class="modal fade" id="templateListModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="templateListLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
@@ -152,46 +186,193 @@
             </div>
         </div>
     </div>
+
+    {{-- MSME Upload Modal --}}
+
+    <div class="modal fade" id="msmeUploadModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="msmeUploadLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <form id="msmeUploadForm" method="POST" action="{{ route('msme.upload-products') }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="msmeUploadLabel">Upload Files for <span id="msmeBotName">Bot</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <!-- Dummy download button -->
+                        <div class="mb-3">
+                            <a href="{{ url('/msme/download-dummy') }}" class="btn btn-info" target="_blank">
+                                <i class="bi bi-download"></i> Download Dummy CSV/Excel
+                            </a>
+                        </div>
+
+                        <!-- File drop area -->
+                        <div id="msmeDropArea" class="p-4 border rounded text-center" style="cursor: pointer;">
+                            <p class="mb-1">Drag & drop files here, or click to browse</p>
+                            <small class="text-muted">Allowed: csv, xls, xlsx. Max file size: 100MB</small>
+                            <input id="msmeFileInput" name="files" type="file" style="display:none;" accept=".csv,.xls,.xlsx" />
+                        </div>
+
+                        <!-- Preview area -->
+                        <div id="msmePreview" class="mt-3"></div>
+                        <div id="msmeError" class="text-danger mt-2" style="display:none;"></div>
+
+                        <!-- Bootstrap progress bar -->
+                        <div class="progress mt-3" style="height: 25px; display: none;" id="msmeProgressWrapper">
+                            <div id="msmeProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">
+                                0%
+                            </div>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="mt-2" id="msmeProgressStats" style="display:none;">
+                            Inserted: <span id="msmeInserted">0</span> |
+                            Updated: <span id="msmeUpdated">0</span>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Upload</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
 @section('script')
     <!-- dashboard init -->
     <script src="{{ URL::asset('build/js/pages/dashboard.init.js') }}"></script>
-    <script>
+    {{-- <script>
         $(document).ready(function() {
-            $('.start-from-scratch').on('click', function(e) {
-                e.preventDefault();
-                let requestData = {
-                    name: 'My Custom Bot', // required field
-                    description: 'This is a new bot',
-                    platform: 'web',
-                    language: 'en',
-                    is_active: true
-                };
-                $.ajax({
-                    url: '/chatbots/store',
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    contentType: 'application/json',
-                    dataType: 'json',
-                    data: JSON.stringify(requestData), // send extra data if needed
-                    success: function(data) {
-                        if (data.success) {
-                            // redirect to chatbot page
-                            window.location.href = '/chatbots/' + data.bot_id + '/build';
-                        } else {
-                            alert('Error creating chatbot');
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error(error);
-                        alert('Something went wrong!');
-                    }
-                });
-            });
+            var botType = $("#botType").val();
+
+            if (botType == "2") {
+                // Show only "Start from scratch"
+                $(".start-from-scratch-wrapper").show();
+                $(".build-it-wrapper, .template-wrapper").hide();
+            } else {
+                // Show all cards
+                $(".start-from-scratch-wrapper, .build-it-wrapper, .template-wrapper").show();
+            }
+        });
+    </script> --}}
+    <script>
+        const dropArea = document.getElementById('msmeDropArea');
+        const fileInput = document.getElementById('msmeFileInput');
+
+        // When the drop area is clicked, trigger file input
+        dropArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Optional: show selected file name in preview
+        fileInput.addEventListener('change', () => {
+            const preview = document.getElementById('msmePreview');
+            preview.innerHTML = '';
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                preview.textContent = `Selected file: ${file.name}`;
+            }
+        });
+
+        // Optional: drag & drop handling
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('bg-light');
+        });
+
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('bg-light');
+        });
+
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('bg-light');
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change')); // trigger change event
+            }
         });
     </script>
+
+
+    <script>
+        $(document).ready(function() {
+
+            let selectedBotType = null; // 1 = Web, 2 = MSME
+
+            // Detect which card was clicked (Web or MSME)
+            $('.create-card-item').on('click', function() {
+                selectedBotType = $(this).data('type');
+                console.log('Selected bot type:', selectedBotType);
+                if (selectedBotType == "2") {
+                    $(".start-from-scratch-wrapper").show();
+                    $(".build-it-wrapper").hide();
+                    $(".template-wrapper").hide();
+                } else {
+                    $(".start-from-scratch-wrapper").hide();
+                    $(".build-it-wrapper, .template-wrapper").show();
+                }
+            });
+
+
+
+
+            // Handle 'Start from scratch' click
+            $('.start-from-scratch').on('click', function(e) {
+                e.preventDefault();
+
+                if (!selectedBotType) {
+                    alert('Please select a bot type first!');
+                    return;
+                }
+
+                // ✅ If Web bot type = 1 → Create bot via AJAX
+                if (selectedBotType == 1) {
+                    let requestData = {
+                        name: 'My Web Bot',
+                        description: 'This is a new web bot',
+                        platform: selectedBotType,
+                        language: 'en',
+                        is_active: true
+                    };
+
+                    $.ajax({
+                        url: '/chatbots/store',
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        contentType: 'application/json',
+                        dataType: 'json',
+                        data: JSON.stringify(requestData),
+                        success: function(data) {
+                            if (data.success) {
+                                window.location.href = '/chatbots/' + data.bot_id + '/build';
+                            } else {
+                                alert('Error creating chatbot');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error(error);
+                            alert('Something went wrong!');
+                        }
+                    });
+
+                } else {
+                    // ✅ MSME bot → Show file upload modal
+                    $("#addchatbot").modal('hide'); // Close previous modal first
+                    setTimeout(function() {
+                        $("#msmeUploadModal").modal('show');
+                    }, 400);
+                }
+            });
+
+        });
+    </script>
+
     <script>
         $(document).ready(function() {
 
@@ -276,6 +457,152 @@
                 });
             });
 
+        });
+    </script>
+
+    <script>
+        $(document).ready(function() {
+            const $msmeForm = $('#msmeUploadForm');
+            const $fileInput = $('#msmeFileInput');
+            const $dropArea = $('#msmeDropArea');
+            const $preview = $('#msmePreview');
+            const $error = $('#msmeError');
+
+            let uploadUuid = null;
+            let pollInterval = null;
+
+            // Click to select file
+            $dropArea.on('click', function() {
+                $fileInput.click();
+            });
+
+            // Drag & Drop
+            $dropArea.on('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).addClass('dragover');
+            });
+
+            $dropArea.on('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).removeClass('dragover');
+            });
+
+            $dropArea.on('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).removeClass('dragover');
+                const files = e.originalEvent.dataTransfer.files;
+                $fileInput[0].files = files;
+                renderPreview(files);
+            });
+
+            // File input change
+            $fileInput.on('change', function() {
+                renderPreview(this.files);
+            });
+
+            // Render file preview
+            function renderPreview(files) {
+                $preview.empty();
+                $error.hide();
+                if (files.length === 0) return;
+                Array.from(files).forEach(file => {
+                    const item = $('<div>').text(file.name + ' (' + formatBytes(file.size) + ')');
+                    $preview.append(item);
+                });
+            }
+
+            // Format bytes nicely
+            function formatBytes(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // Submit form
+            $msmeForm.on('submit', function(e) {
+                e.preventDefault();
+                if ($fileInput[0].files.length === 0) {
+                    alert('Please select a file to upload.');
+                    return;
+                }
+
+                const formData = new FormData(this);
+                const $submitBtn = $(this).find('button[type="submit"]');
+                $submitBtn.prop('disabled', true).text('Uploading...');
+
+                $.ajaxSetup({
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    }
+                });
+
+                $.ajax({
+                    url: $(this).attr('action'),
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(res) {
+                        uploadUuid = res.upload_uuid;
+                        startPolling();
+                    },
+                    error: function(xhr) {
+                        let msg = 'Upload failed.';
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            msg = Object.values(xhr.responseJSON.errors).flat().join(', ');
+                        }
+                        $error.text(msg).show();
+                        $submitBtn.prop('disabled', false).text('Upload');
+                    }
+                });
+            });
+
+            // Poll upload progress
+            function startPolling() {
+                if (!uploadUuid) return;
+
+                pollInterval = setInterval(function() {
+                    $.getJSON('/msme/upload-status/' + uploadUuid, function(res) {
+                        if (res.success) {
+                            const data = res.data;
+                            const percent = data.total_rows > 0 ?
+                                Math.round((data.processed_rows / data.total_rows) * 100) :
+                                0;
+
+                            updateProgressBar(percent, data.inserted, data.updated);
+
+                            if (data.status === 'done' || data.status === 'failed') {
+                                clearInterval(pollInterval);
+                                $('#msmeUploadModal').modal('hide');
+                                alert('Upload completed!');
+                                // alert('Upload completed! Inserted: ' + data.inserted + ', Updated: ' + data.updated);
+                                location.reload();
+                            }
+                        }
+                    });
+                }, 2000);
+            }
+
+            // Update Bootstrap progress bar and stats
+            function updateProgressBar(percent, inserted, updated) {
+                const $wrapper = $('#msmeProgressWrapper');
+                const $bar = $('#msmeProgressBar');
+                const $stats = $('#msmeProgressStats');
+
+                $wrapper.show();
+                $stats.show();
+
+                $bar.css('width', percent + '%');
+                $bar.text(percent + '%');
+
+                $('#msmeInserted').text(inserted);
+                $('#msmeUpdated').text(updated);
+            }
         });
     </script>
 @endsection

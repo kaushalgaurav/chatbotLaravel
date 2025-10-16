@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->string('name');                // chatbot name
             $table->unsignedBigInteger('user_id');         // owner
             $table->string('description')->nullable(); // short description
-            $table->string('platform')->nullable();    // e.g., "WhatsApp", "Web", "Telegram"
+            $table->integer('platform')->nullable();    // e.g., "1 for web", "2 for store"
             $table->string('language')->default('en'); // default language
             $table->boolean('is_active')->default(true);
             $table->timestamps();

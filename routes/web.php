@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\TemplateController;
+use Laravel\Horizon\Horizon;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,6 +19,10 @@ use App\Http\Controllers\TemplateController;
 */
 
 Auth::routes(['verify' => true]);
+
+Horizon::auth(function ($request) {
+    return true; // Later we restrict by user role
+});
 
 Route::get('/', [HomeController::class, 'root'])->name('root')->middleware('auth');
 
@@ -45,6 +50,10 @@ Route::get('chatbots/{chatbot}/design', [ChatbotController::class, 'designChatbo
 Route::get('chatbots/{chatbot}/settings', [ChatbotController::class, 'settingChatbot'])->name('chatbots.settings');
 Route::get('chatbots/{chatbot}/share', [ChatbotController::class, 'shareChatbot'])->name('chatbots.share');
 Route::get('chatbots/{chatbot}/analyze', [ChatbotController::class, 'analyzeChatbot'])->name('chatbots.analyze');
+Route::post('/msme/upload-products', [ChatbotController::class, 'uploadProducts'])->name('msme.upload-products');
+Route::get('/msme/upload-status/{upload_uuid}', [ChatbotController::class, 'uploadStatus'])->name('msme.upload-status');
+Route::get('/msme/download-dummy', [ChatbotController::class, 'downloadDummyFile'])->name('msme.download-dummy');
+
 Route::resource('chatbots', ChatbotController::class);
 
 
