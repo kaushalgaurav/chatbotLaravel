@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { FlowApp, SharePage, PreviewPage } from "./landbot/components/index";
 // import './bootstrap';    // if you use this (axios/csrf)
 import './app';   
+import 'react-quill/dist/quill.snow.css';
+
 
 export default function App() {
   return (
