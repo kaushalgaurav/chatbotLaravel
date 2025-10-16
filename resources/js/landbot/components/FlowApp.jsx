@@ -321,13 +321,16 @@ export default function FlowApp() {
   // Load + auto-save draft (server-first + bot_id sync)
   // -----------------------
   useEffect(() => {
+    // 🔧 FIX: Ensure chatbotId comes from dataset (unique per bot)
     const chatbotId = document.getElementById("root")?.dataset?.chatbotId ?? "";
-    if (!chatbotId) return;
+    if (!chatbotId) {
+      console.warn("[FlowApp] Missing chatbotId dataset in #root");
+      return;
+    }
 
-    // Respect botId from URL if present
-    const urlParams = new URLSearchParams(window.location.search);
-    const botIdFromUrl = urlParams.get("botId");
+    // Always make keys unique per chatbot
     const botIdKey = `bot_id:${chatbotId}`;
+    console.info("[FlowApp] Using chatbotId:", chatbotId);
 
     const applyFlow = (flow) => {
       // Normalize backend / local flow shape
@@ -341,7 +344,6 @@ export default function FlowApp() {
       if (flow.payload && !flow.nodes) flow = flow.payload;
       if (Array.isArray(flow.payload)) flow = { nodes: flow.payload, edges: [] };
       if (flow.flow && !flow.nodes) flow = flow.flow;
-
 
       const loadedNodes = flow?.nodes?.length ? flow.nodes : initialNodes;
       const patchedNodes = loadedNodes.map(n => {
@@ -365,25 +367,20 @@ export default function FlowApp() {
 
       setNodes(patchedNodes);
       setEdges(validEdges);
-
     };
 
     (async () => {
       try {
-        // STEP A: Ensure canonical bot_id in localStorage:
-        // if botId is present in URL use it; otherwise try to get from server or existing localStorage
+        // STEP A: Ensure canonical bot_id in localStorage
         let botId = localStorage.getItem(botIdKey) || null;
-        if (botIdFromUrl && botIdFromUrl.startsWith("v-")) {
-          botId = botIdFromUrl;
-          localStorage.setItem(botIdKey, botId);
-          console.info("[FlowApp] Using botId from URL:", botId);
-        } else if (!botId) {
-          // Try fetching server-side to retrieve an existing bot_id (publish-chatbot returns data which may include bot_id)
+
+        if (!botId) {
+          // Try fetching server-side to retrieve an existing bot_id
           try {
             const metaRes = await fetch(`${BASE_URL}/publish-chatbot/${encodeURIComponent(chatbotId)}`, {
               method: "GET",
               headers: { Accept: "application/json" },
-              credentials: 'include'
+              credentials: "include"
             });
             if (metaRes.ok) {
               const metaJson = await metaRes.clone().json().catch(() => null);
@@ -399,7 +396,6 @@ export default function FlowApp() {
               }
             }
           } catch (err) {
-            // ignore meta fetch errors, we'll try to load flow normally below
             console.warn("[FlowApp] bot_id fetch attempt failed:", err);
           }
         } else {
@@ -407,12 +403,11 @@ export default function FlowApp() {
         }
 
         // STEP B: Fetch flow from backend (server-first)
-        // First try the authenticated numeric endpoint (publish-chatbot/:chatbotId) — this can also include payload
         try {
           const res = await fetch(`${BASE_URL}/publish-chatbot/${encodeURIComponent(chatbotId)}`, {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' },
-            credentials: 'include'
+            method: "GET",
+            headers: { Accept: "application/json" },
+            credentials: "include"
           });
 
           if (res.ok) {
@@ -426,12 +421,12 @@ export default function FlowApp() {
               json?.data ||
               null;
 
-            // if server provided a bot_id here, persist it (keeps incognito in sync)
             const maybeBotId =
               json?.data?.bot_id ||
               json?.payload?.bot_id ||
               json?.bot_id ||
               null;
+
             if (maybeBotId) {
               localStorage.setItem(botIdKey, maybeBotId);
               console.info("[FlowApp] Persisted backend bot_id:", maybeBotId);
@@ -439,19 +434,36 @@ export default function FlowApp() {
 
             if (flowFromServer) {
               applyFlow(flowFromServer);
-              try { localStorage.setItem(`${PUBLISH_KEY}:${chatbotId}:draft`, JSON.stringify(flowFromServer)); } catch (e) { }
+              try {
+                localStorage.setItem(
+                  `${PUBLISH_KEY}:${chatbotId}:draft`,
+                  JSON.stringify(flowFromServer)
+                );
+              } catch (e) { }
               return;
             } else {
               console.info("[FlowApp] Backend responded OK but no flow payload");
             }
           } else {
             console.info("[FlowApp] publish-chatbot status:", res.status);
+            // 🔧 NEW FIX: handle missing chatbot flow cleanly
+            if (res.status === 404) {
+              const draftKey = `${PUBLISH_KEY}:${chatbotId}:draft`;
+
+              // Remove any old cached flow from other bots
+              localStorage.removeItem(draftKey);
+
+              console.warn(`[FlowApp] No backend flow found for chatbot ${chatbotId}, starting with a blank flow`);
+              applyFlow({ nodes: initialNodes, edges: [] });
+              return; // stop further logic
+            }
+
           }
         } catch (err) {
-          console.warn('[FlowApp] Could not fetch published flow from server', err);
+          console.warn("[FlowApp] Could not fetch published flow from server", err);
         }
 
-        // If we have a canonical botId (from URL or persisted), try public published/:botId endpoint
+        // STEP C: fallback to published/:botId endpoint
         const persistedBotId = localStorage.getItem(botIdKey);
         if (persistedBotId) {
           try {
@@ -461,11 +473,17 @@ export default function FlowApp() {
             });
             if (pubRes.ok) {
               const pubJson = await pubRes.json().catch(() => null);
-              const flowFromPub = pubJson?.payload?.flow || pubJson?.payload || pubJson?.flow || pubJson || null;
+              const flowFromPub =
+                pubJson?.payload?.flow || pubJson?.payload || pubJson?.flow || pubJson || null;
               if (flowFromPub) {
                 console.info("[FlowApp] ✅ Loaded flow from published/:botId");
                 applyFlow(flowFromPub);
-                try { localStorage.setItem(`${PUBLISH_KEY}:${chatbotId}:draft`, JSON.stringify(flowFromPub)); } catch (e) { }
+                try {
+                  localStorage.setItem(
+                    `${PUBLISH_KEY}:${chatbotId}:draft`,
+                    JSON.stringify(flowFromPub)
+                  );
+                } catch (e) { }
                 return;
               }
             } else {
@@ -476,7 +494,7 @@ export default function FlowApp() {
           }
         }
 
-        // STEP C: fallback to local draft
+        // STEP D: fallback to local draft
         try {
           const draftKey = `${PUBLISH_KEY}:${chatbotId}:draft`;
           const draftRaw = localStorage.getItem(draftKey);
@@ -488,7 +506,7 @@ export default function FlowApp() {
           console.warn("[FlowApp] Local draft load failed:", err);
         }
 
-        // STEP D: initial nodes
+        // STEP E: Default empty flow
         applyFlow({ nodes: initialNodes, edges: [] });
       } catch (err) {
         console.warn("[FlowApp] Unexpected error in flow load:", err);
@@ -498,6 +516,7 @@ export default function FlowApp() {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setNodes, setEdges]);
+
 
   // Persist draft whenever nodes/edges change (unchanged)
   useEffect(() => {
@@ -598,7 +617,7 @@ export default function FlowApp() {
           onNodesChange={handleNodesChange} onEdgesChange={handleEdgesChange}
           onConnect={handleConnect} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
           proOptions={{ hideAttribution: true }}
-          onNodeDoubleClick={(_, node) => setSelectedNodeId(node.id)}
+          onNodeClick={(_, node) => setSelectedNodeId(node.id)}
           fitView style={{ backgroundColor: "#454B6B" }}
           maxZoom={1}
         >

@@ -98,15 +98,15 @@ export default function Topbar({ onTest, onPublish, publishing = false }) {
                     >
                         Setting
                     </a>
-                    <a
-                        href={`${window.laravelData.chatbotUrl}/share`}
-                        // to="/share"
+                    <NavLink
+                        // href={`${window.laravelData.chatbotUrl}/share`}
+                        to="/share"
                         className={({ isActive }) =>
                             `${linkClass} ${isActive ? "active-link" : ""}`
                         }
                     >
                         Share
-                    </a>
+                    </NavLink>
                     <a
                         href={`${window.laravelData.chatbotUrl}/analyze`}
                         className={({ isActive }) =>

@@ -15,7 +15,7 @@ export default function App() {
           <Route path="/" element={<FlowApp />} />
 
           {/* /chatbots/share */}
-          <Route path="share" element={<SharePage />} />
+          <Route path="/share" element={<SharePage />} />
 
           {/* /chatbots/bot/preview/:botId  (if you want to keep preview route under /chatbots/bot/preview/...) */}
           <Route path="bot/preview/:botId" element={<PreviewPage />} />
