@@ -26,20 +26,18 @@
                             <thead>
                                 <tr>
                                     <th>Conversation ID</th>
-                                    @foreach ($allBotMessages as $botMessage)
-                                        <th>{{ $botMessage }}</th>
-                                    @endforeach
+                                    <th>Bot Message</th>
+                                    <th>User Reply</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($tableData as $row)
                                     <tr>
                                         <td>{{ $row['conversation_id'] }}</td>
-                                        @foreach ($allBotMessages as $botMessage)
-                                            <td class="{{ $row[$botMessage] === 'N/A' ? 'text-danger fw-bold' : '' }}">
-                                                {{ $row[$botMessage] }}
-                                            </td>
-                                        @endforeach
+                                        <td>{{ $row['bot_message'] }}</td>
+                                        <td class="{{ $row['user_reply'] === 'N/A' ? 'text-danger fw-bold' : '' }}">
+                                            {{ $row['user_reply'] ?? 'N/A' }}
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -58,34 +56,6 @@
                             <li>User Messages: {{ $analytics['user_messages'] }}</li>
                             <li>Average User Messages per Conversation: {{ $analytics['average_user_messages_per_conversation'] }}</li>
                         </ul>
-                        <!-- Charts -->
-                        <div class="row mb-5">
-                            <div class="col-md-6 mb-4">
-                                <h5>Total vs Bot vs User Messages</h5>
-                                <div id="messagesChart"></div>
-                            </div>
-                            <div class="col-md-6 mb-4">
-                                <h5>Average User Messages per Conversation</h5>
-                                <div id="averageUserChart"></div>
-                            </div>
-                            <div class="col-md-6 mb-4">
-                                <h5>Response Rate per Bot Message</h5>
-                                <div id="responseRateChart"></div>
-                            </div>
-                            <div class="col-md-6 mb-4">
-                                <h5>Top Bot Messages by Replies</h5>
-                                <div id="topBotChart"></div>
-                            </div>
-                            <div class="col-md-6 mb-4">
-                                <h5>Conversation Length Distribution</h5>
-                                <div id="conversationLengthChart"></div>
-                            </div>
-
-                            <div class="col-6 mb-4">
-                                <h5>Response Heatmap (Conversations vs Bot Messages)</h5>
-                                <div id="heatmapChart"></div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -98,4 +68,22 @@
             </div>
         </div>
     </div>
+@endsection
+@section('scripts')
+    <!-- DataTables CSS & JS CDN -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('#datatable').DataTable({
+                "paging": true,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                "responsive": true
+            });
+        });
+    </script>
 @endsection

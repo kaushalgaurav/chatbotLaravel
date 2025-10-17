@@ -22,26 +22,26 @@
                 <div class="card-section-table">
                     <div class="card-body">
                         {{-- <h4 class="card-title">Datatable</h4> --}}
-                        <table id="datatable" class="table table-bordered table-striped nowrap w-100">
+                        <table id="datatable" class="table table-bordered nowrap w-100">
+                            {{-- <table id="datatable" class="table table-bordered dt-responsive nowrap w-100"> --}}
                             <thead>
                                 <tr>
-                                    <th>Conversation ID</th>
-                                    @foreach ($allBotMessages as $botMessage)
+                                    @foreach ($tableData as $botMessage => $userResponses)
                                         <th>{{ $botMessage }}</th>
                                     @endforeach
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach ($tableData as $row)
+                                @php
+                                    $maxRows = max(array_map('count', $tableData));
+                                @endphp
+                                @for ($i = 0; $i < $maxRows; $i++)
                                     <tr>
-                                        <td>{{ $row['conversation_id'] }}</td>
-                                        @foreach ($allBotMessages as $botMessage)
-                                            <td class="{{ $row[$botMessage] === 'N/A' ? 'text-danger fw-bold' : '' }}">
-                                                {{ $row[$botMessage] }}
-                                            </td>
+                                        @foreach ($tableData as $userResponses)
+                                            <td>{{ $userResponses[$i] ?? '' }}</td>
                                         @endforeach
                                     </tr>
-                                @endforeach
+                                @endfor
                             </tbody>
                         </table>
                     </div>
@@ -58,34 +58,6 @@
                             <li>User Messages: {{ $analytics['user_messages'] }}</li>
                             <li>Average User Messages per Conversation: {{ $analytics['average_user_messages_per_conversation'] }}</li>
                         </ul>
-                        <!-- Charts -->
-                        <div class="row mb-5">
-                            <div class="col-md-6 mb-4">
-                                <h5>Total vs Bot vs User Messages</h5>
-                                <div id="messagesChart"></div>
-                            </div>
-                            <div class="col-md-6 mb-4">
-                                <h5>Average User Messages per Conversation</h5>
-                                <div id="averageUserChart"></div>
-                            </div>
-                            <div class="col-md-6 mb-4">
-                                <h5>Response Rate per Bot Message</h5>
-                                <div id="responseRateChart"></div>
-                            </div>
-                            <div class="col-md-6 mb-4">
-                                <h5>Top Bot Messages by Replies</h5>
-                                <div id="topBotChart"></div>
-                            </div>
-                            <div class="col-md-6 mb-4">
-                                <h5>Conversation Length Distribution</h5>
-                                <div id="conversationLengthChart"></div>
-                            </div>
-
-                            <div class="col-6 mb-4">
-                                <h5>Response Heatmap (Conversations vs Bot Messages)</h5>
-                                <div id="heatmapChart"></div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

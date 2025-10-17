@@ -279,44 +279,314 @@ class ChatbotController extends Controller {
         return view('chatbots.share', compact('chatbot'));
     }
 
+    // public function analyzeChatbot($encryptedId) {
+    //     // dd('analyzeChatbot');
+    //     $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
+    //     $chatbotId = $chatbot->id;
+    //     $publishedBot = Publication::where('chatbot_id', $chatbotId)->where('is_published', 1)->first();
+    //     if (!$publishedBot) {
+    //         return redirect()->back()->with('error', 'No published version found for this chatbot.');
+    //     }
+    //     $botId = $publishedBot->bot_id;
+
+    //     // Fetch all conversations for this bot, grouped by conversation_id
+    //     $conversations = Conversation::where('bot_id', $botId)
+    //         ->orderBy('conversation_id')
+    //         ->orderBy('created_at')
+    //         ->get()
+    //         ->groupBy('conversation_id');
+
+
+    //     // Prepare table data: bot messages as headers, user responses as rows
+    //     $tableData = [];
+    //     $currentBotMessage = [];
+    //     foreach ($conversations as $convId => $messages) {
+    //         $row = [];
+    //         foreach ($messages as $msg) {
+    //             if ($msg->sender === 'bot') {
+    //                 $currentBotMessage = $msg->message;
+    //                 if (!isset($tableData[$currentBotMessage])) {
+    //                     $tableData[$currentBotMessage] = [];
+    //                 }
+    //             } elseif ($msg->sender === 'user') {
+    //                 $tableData[$currentBotMessage][] = $msg->message;
+    //             }
+    //         }
+    //     }
+
+    //     dd($tableData);
+    //     // Generic analytics
+    //     $analytics = $this->getAnalytics($conversations);
+
+    //     return view('chatbots.analyze', compact('tableData', 'analytics'));
+    // }
+
+    // public function analyzeChatbot($encryptedId) {
+    //     $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
+    //     $chatbotId = $chatbot->id;
+
+    //     $publishedBot = Publication::where('chatbot_id', $chatbotId)
+    //         ->where('is_published', 1)
+    //         ->first();
+
+    //     if (!$publishedBot) {
+    //         return redirect()->back()->with('error', 'No published version found for this chatbot.');
+    //     }
+
+    //     $botId = $publishedBot->bot_id;
+
+    //     // Fetch all conversations for this bot, grouped by conversation_id
+    //     $conversations = Conversation::where('bot_id', $botId)
+    //         ->orderBy('conversation_id')
+    //         ->orderBy('created_at')
+    //         ->get()
+    //         ->groupBy('conversation_id');
+
+    //     $tableData = [];
+
+    //     foreach ($conversations as $convId => $messages) {
+    //         $currentBotMessage = null;
+
+    //         foreach ($messages as $msg) {
+    //             if ($msg->sender === 'bot') {
+    //                 $currentBotMessage = $msg->message;
+
+    //                 // Detect JSON and extract "question" field
+    //                 $decoded = json_decode($currentBotMessage, true);
+    //                 if (json_last_error() === JSON_ERROR_NONE && isset($decoded['question'])) {
+    //                     $currentBotMessage = $decoded['question'];
+    //                 }
+    //             }
+
+    //             if ($msg->sender === 'user') {
+    //                 $tableData[] = [
+    //                     'conversation_id' => $convId,
+    //                     'bot_message' => $currentBotMessage,
+    //                     'user_reply' => $msg->message
+    //                 ];
+    //             }
+    //         }
+
+    //         // Check if last bot message has no user reply
+    //         if ($messages->last()->sender === 'bot') {
+    //             $lastBotMessage = $messages->last()->message;
+    //             $decoded = json_decode($lastBotMessage, true);
+    //             if (json_last_error() === JSON_ERROR_NONE && isset($decoded['question'])) {
+    //                 $lastBotMessage = $decoded['question'];
+    //             }
+
+    //             $tableData[] = [
+    //                 'conversation_id' => $convId,
+    //                 'bot_message' => $lastBotMessage,
+    //                 'user_reply' => 'N/A'
+    //             ];
+    //         }
+    //     }
+
+    //     // Optional analytics
+    //     $analytics = $this->getAnalytics($conversations);
+
+    //     return view('chatbots.analyze', compact('tableData', 'analytics'));
+    // }
+    // public function analyzeChatbot($encryptedId) {
+    //     $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
+    //     $chatbotId = $chatbot->id;
+
+    //     $publishedBot = Publication::where('chatbot_id', $chatbotId)
+    //         ->where('is_published', 1)
+    //         ->first();
+
+    //     if (!$publishedBot) {
+    //         return redirect()->back()->with('error', 'No published version found for this chatbot.');
+    //     }
+
+    //     $botId = $publishedBot->bot_id;
+
+    //     // Fetch all conversations for this bot
+    //     $conversations = Conversation::where('bot_id', $botId)
+    //         ->orderBy('conversation_id')
+    //         ->orderBy('created_at')
+    //         ->get()
+    //         ->groupBy('conversation_id');
+
+    //     $allBotMessages = [];
+    //     $tableData = [];
+
+    //     // Step 1: Collect all unique bot messages across all conversations
+    //     foreach ($conversations as $convId => $messages) {
+    //         foreach ($messages as $msg) {
+    //             if ($msg->sender === 'bot') {
+    //                 $botMessage = $msg->message;
+
+    //                 // Detect JSON question
+    //                 $decoded = json_decode($botMessage, true);
+    //                 if (json_last_error() === JSON_ERROR_NONE && isset($decoded['question'])) {
+    //                     $botMessage = $decoded['question'];
+    //                 }
+
+    //                 if (!in_array($botMessage, $allBotMessages)) {
+    //                     $allBotMessages[] = $botMessage;
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //     // Step 2: Prepare table rows per conversation
+    //     foreach ($conversations as $convId => $messages) {
+    //         $row = ['conversation_id' => $convId];
+
+    //         // Initialize all bot columns as N/A
+    //         foreach ($allBotMessages as $botMessage) {
+    //             $row[$botMessage] = 'N/A';
+    //         }
+
+    //         // Pair each bot with its next user reply
+    //         $botQueue = []; // queue to store bot messages waiting for reply
+    //         foreach ($messages as $msg) {
+    //             if ($msg->sender === 'bot') {
+    //                 $botMessage = $msg->message;
+    //                 $decoded = json_decode($botMessage, true);
+    //                 if (json_last_error() === JSON_ERROR_NONE && isset($decoded['question'])) {
+    //                     $botMessage = $decoded['question'];
+    //                 }
+    //                 $botQueue[] = $botMessage;
+    //             } elseif ($msg->sender === 'user' && !empty($botQueue)) {
+    //                 // assign the first bot message waiting in the queue
+    //                 $currentBot = array_shift($botQueue);
+    //                 $row[$currentBot] = $msg->message;
+    //             }
+    //         }
+
+    //         $tableData[] = $row;
+    //     }
+    //     // Optional analytics
+    //     $analytics = $this->getAnalytics($conversations);
+
+    //     return view('chatbots.analyze', compact('tableData', 'allBotMessages', 'analytics'));
+    // }
+
+
+
+    // /**
+    //  * Generic analytics suitable for any bot
+    //  */
+    // protected function getAnalytics($conversations) {
+    //     $totalConversations = $conversations->count();
+    //     $totalMessages = $conversations->sum(fn($msgs) => $msgs->count());
+    //     $botMessages = $conversations->sum(fn($msgs) => $msgs->where('sender', 'bot')->count());
+    //     $userMessages = $conversations->sum(fn($msgs) => $msgs->where('sender', 'user')->count());
+
+    //     return [
+    //         'total_conversations' => $totalConversations,
+    //         'total_messages' => $totalMessages,
+    //         'bot_messages' => $botMessages,
+    //         'user_messages' => $userMessages,
+    //         'average_user_messages_per_conversation' => $totalConversations ? round($userMessages / $totalConversations, 2) : 0,
+    //     ];
+    // }
+
+
     public function analyzeChatbot($encryptedId) {
-        // dd('analyzeChatbot');
         $chatbot = Chatbot::findOrFail(Crypt::decryptString($encryptedId));
         $chatbotId = $chatbot->id;
-        $publishedBot = Publication::where('chatbot_id', $chatbotId)->where('is_published', 1)->first();
+
+        $publishedBot = Publication::where('chatbot_id', $chatbotId)
+            ->where('is_published', 1)
+            ->first();
+
         if (!$publishedBot) {
             return redirect()->back()->with('error', 'No published version found for this chatbot.');
         }
+
         $botId = $publishedBot->bot_id;
 
-        // Fetch all conversations for this bot, grouped by conversation_id
+        // Fetch all conversations for this bot
         $conversations = Conversation::where('bot_id', $botId)
             ->orderBy('conversation_id')
             ->orderBy('created_at')
             ->get()
             ->groupBy('conversation_id');
 
-        // Prepare table data: bot messages as headers, user responses as rows
+        $allBotMessages = [];
         $tableData = [];
-        $currentBotMessage = [];
+
+        // Collect unique bot messages
         foreach ($conversations as $convId => $messages) {
-            $row = [];
             foreach ($messages as $msg) {
                 if ($msg->sender === 'bot') {
-                    $currentBotMessage = $msg->message;
-                    if (!isset($tableData[$currentBotMessage])) {
-                        $tableData[$currentBotMessage] = [];
+                    $botMessage = $msg->message;
+                    $decoded = json_decode($botMessage, true);
+                    if (json_last_error() === JSON_ERROR_NONE && isset($decoded['question'])) {
+                        $botMessage = $decoded['question'];
                     }
-                } elseif ($msg->sender === 'user') {
-                    $tableData[$currentBotMessage][] = $msg->message;
+                    if (!in_array($botMessage, $allBotMessages)) {
+                        $allBotMessages[] = $botMessage;
+                    }
                 }
             }
         }
 
-        // Generic analytics
+        // Prepare pivot table rows
+        foreach ($conversations as $convId => $messages) {
+            $row = ['conversation_id' => $convId];
+
+            foreach ($allBotMessages as $botMessage) {
+                $row[$botMessage] = 'N/A';
+            }
+
+            $botQueue = [];
+            foreach ($messages as $msg) {
+                if ($msg->sender === 'bot') {
+                    $botMessage = $msg->message;
+                    $decoded = json_decode($botMessage, true);
+                    if (json_last_error() === JSON_ERROR_NONE && isset($decoded['question'])) {
+                        $botMessage = $decoded['question'];
+                    }
+                    $botQueue[] = $botMessage;
+                } elseif ($msg->sender === 'user' && !empty($botQueue)) {
+                    $currentBot = array_shift($botQueue);
+                    $row[$currentBot] = $msg->message;
+                }
+            }
+
+            $tableData[] = $row;
+        }
+
+        // Analytics
         $analytics = $this->getAnalytics($conversations);
 
-        return view('chatbots.analyze', compact('tableData', 'analytics'));
+        // Response Rate per bot message
+        $responseRate = [];
+        foreach ($allBotMessages as $botMessage) {
+            $answered = 0;
+            $notAnswered = 0;
+            foreach ($tableData as $row) {
+                if ($row[$botMessage] !== 'N/A') $answered++;
+                else $notAnswered++;
+            }
+            $responseRate[] = [
+                'label' => $botMessage,
+                'answered' => $answered,
+                'not_answered' => $notAnswered,
+            ];
+        }
+
+        // Top Bot Messages by Replies
+        $topBotMessages = [];
+        foreach ($responseRate as $item) {
+            $topBotMessages[] = [
+                'label' => $item['label'],
+                'replies' => $item['answered'],
+            ];
+        }
+
+        return view('chatbots.analyze', compact(
+            'tableData',
+            'allBotMessages',
+            'analytics',
+            'responseRate',
+            'topBotMessages'
+        ));
     }
 
     /**
@@ -336,6 +606,9 @@ class ChatbotController extends Controller {
             'average_user_messages_per_conversation' => $totalConversations ? round($userMessages / $totalConversations, 2) : 0,
         ];
     }
+
+
+
 
     public function uploadProducts(Request $request) {
         $validator = Validator::make($request->all(), [
